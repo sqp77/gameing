@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Park Master 3D</title>
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- ===================== MAIN MENU ===================== -->
+      <section id="screen-main-menu" class="screen">
+        <div class="menu-panel">
+          <h1 class="game-title">PARK<span>MASTER</span> 3D</h1>
+          <p class="game-subtitle">Precision Parking Simulator</p>
+          <div class="menu-buttons">
+            <button id="btn-play" class="btn btn-primary">Play</button>
+            <button id="btn-level-select" class="btn">Level Select</button>
+            <button id="btn-settings" class="btn">Settings</button>
+          </div>
+          <div class="menu-footer">Best Score: <span id="best-score-label">0</span></div>
+        </div>
+      </section>
+
+      <!-- ===================== LEVEL SELECT ===================== -->
+      <section id="screen-level-select" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2>Select Level</h2>
+          <div id="level-grid" class="level-grid"></div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+        </div>
+      </section>
+
+      <!-- ===================== SETTINGS ===================== -->
+      <section id="screen-settings" class="screen hidden">
+        <div class="menu-panel">
+          <h2>Settings</h2>
+          <div class="settings-row">
+            <label>Master Volume</label>
+            <input type="range" id="setting-volume" min="0" max="100" value="70" />
+          </div>
+          <div class="settings-row">
+            <label>Camera</label>
+            <select id="setting-camera">
+              <option value="third">Third Person</option>
+              <option value="first">First Person</option>
+              <option value="top">Top Down</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label>Steering Sensitivity</label>
+            <input type="range" id="setting-sensitivity" min="50" max="150" value="100" />
+          </div>
+          <div class="settings-row">
+            <label>Shadows</label>
+            <input type="checkbox" id="setting-shadows" checked />
+          </div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+        </div>
+      </section>
+
+      <!-- ===================== HUD (GAMEPLAY) ===================== -->
+      <section id="screen-hud" class="screen hidden hud">
+        <div class="hud-top">
+          <div class="hud-chip">Level <span id="hud-level">1</span></div>
+          <div class="hud-chip hud-objective" id="hud-objective">Park in the marked spot</div>
+          <div class="hud-chip">Score <span id="hud-score">0</span></div>
+          <div class="hud-chip" id="hud-timer">02:00</div>
+          <button id="btn-pause" class="btn btn-icon">II</button>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="dashboard">
+            <div class="speed-gauge">
+              <div class="speed-value" id="hud-speed">0</div>
+              <div class="speed-unit">km/h</div>
+            </div>
+            <div class="gear-indicator" id="hud-gear">D</div>
+          </div>
+          <button id="btn-camera-toggle" class="btn btn-icon cam-toggle">CAM</button>
+          <button id="btn-handbrake" class="btn btn-icon handbrake-btn">HB</button>
+        </div>
+
+        <div id="mobile-controls" class="mobile-controls hidden">
+          <div class="dpad">
+            <button id="ctrl-left" class="ctrl-btn">◀</button>
+            <button id="ctrl-accel" class="ctrl-btn">▲</button>
+            <button id="ctrl-brake" class="ctrl-btn">▼</button>
+            <button id="ctrl-right" class="ctrl-btn">▶</button>
+          </div>
+        </div>
+
+        <div id="parking-progress" class="parking-progress hidden">
+          <div class="parking-progress-bar"><div id="parking-progress-fill" class="parking-progress-fill"></div></div>
+          <span>Hold position to complete parking...</span>
+        </div>
+
+        <div id="toast-container" class="toast-container"></div>
+      </section>
+
+      <!-- ===================== PAUSE ===================== -->
+      <section id="screen-pause" class="screen hidden overlay">
+        <div class="menu-panel">
+          <h2>Paused</h2>
+          <div class="menu-buttons">
+            <button id="btn-resume" class="btn btn-primary">Resume</button>
+            <button id="btn-restart" class="btn">Restart Level</button>
+            <button id="btn-pause-settings" class="btn">Settings</button>
+            <button id="btn-quit" class="btn btn-back">Quit to Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== VICTORY ===================== -->
+      <section id="screen-victory" class="screen hidden overlay">
+        <div class="menu-panel">
+          <h2 class="victory-title">Parked!</h2>
+          <div class="score-breakdown" id="score-breakdown"></div>
+          <div class="total-score">Total: <span id="victory-total">0</span></div>
+          <div class="menu-buttons">
+            <button id="btn-next-level" class="btn btn-primary">Next Level</button>
+            <button id="btn-retry" class="btn">Retry</button>
+            <button id="btn-victory-menu" class="btn btn-back">Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== GAME OVER ===================== -->
+      <section id="screen-gameover" class="screen hidden overlay">
+        <div class="menu-panel">
+          <h2 class="gameover-title">Time's Up</h2>
+          <p id="gameover-reason">You ran out of time.</p>
+          <div class="menu-buttons">
+            <button id="btn-gameover-retry" class="btn btn-primary">Retry</button>
+            <button id="btn-gameover-menu" class="btn btn-back">Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="loading-screen" class="screen loading">
+        <div class="loader"></div>
+        <div class="loading-text">Loading Park Master 3D...</div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
