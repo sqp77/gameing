@@ -6,6 +6,7 @@
  */
 
 import { EventEmitter } from '../utils/EventEmitter.js';
+import { starsForScore } from '../utils/scoring.js';
 
 const PENALTY_COLLISION = 40;
 const PENALTY_BOUNDARY = 25;
@@ -14,6 +15,8 @@ const BASE_SCORE = 500;
 const TIME_BONUS_PER_SEC = 6;
 const NO_COLLISION_BONUS = 150;
 const ACCURACY_BONUS_MAX = 300;
+const COIN_BASE = 10;
+const COIN_BONUS = 5;
 
 // Tracks a single level attempt's run stats (collisions, boundary exits, wrong-spot
 // attempts, elapsed/remaining time) and turns them into the final score breakdown
@@ -72,6 +75,10 @@ export class ScoreManager extends EventEmitter {
     const noCollisionBonus = this.collisions === 0 ? NO_COLLISION_BONUS : 0;
     const raw = BASE_SCORE + timeBonus + accuracyBonus + noCollisionBonus - this.penaltyTotal;
     const total = Math.max(0, Math.round(raw));
+    const stars = starsForScore(total);
+    // Small flat currency reward, independent of the score curve: a base payout plus bonuses for
+    // the same three things the star rating already rewards (speed, accuracy, clean driving).
+    const coins = COIN_BASE + (this.collisions === 0 ? COIN_BONUS : 0) + (accuracy >= 0.9 ? COIN_BONUS : 0) + (stars === 3 ? COIN_BONUS : 0);
     return {
       base: BASE_SCORE,
       timeBonus,
@@ -79,7 +86,8 @@ export class ScoreManager extends EventEmitter {
       noCollisionBonus,
       penalties: this.penaltyTotal,
       total,
-      stars: total >= 850 ? 3 : total >= 550 ? 2 : 1,
+      stars,
+      coins,
     };
   }
 }

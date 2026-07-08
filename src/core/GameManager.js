@@ -73,6 +73,8 @@ export class GameManager {
     this.state = 'menu';
     this._collisionCooldown = 0;
     this._boundaryCooldown = 0;
+    this._sessionPlayTime = 0; // accumulated seconds of active driving, flushed into SaveManager on state changes
+    this._preConfirmState = 'playing'; // state to return to if a restart confirmation is cancelled
 
     this.renderer.shadowMap.enabled = this.save.getSettings().shadows;
     this.audio.setVolume(this.save.getSettings().volume);
@@ -85,6 +87,7 @@ export class GameManager {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.pauseGame();
     });
+    window.addEventListener('beforeunload', () => this._flushPlayTime());
   }
 
   init() {
@@ -101,10 +104,17 @@ export class GameManager {
     this.ui.on('pause', () => this.pauseGame());
     this.ui.on('resume', () => this.resumeGame());
     this.ui.on('restart', () => this.restartLevel());
+    this.ui.on('restartRequest', () => this.requestRestart());
+    this.ui.on('restartConfirmed', () => this.confirmRestart());
+    this.ui.on('restartCancelled', () => this.cancelRestart());
     this.ui.on('quit', () => this.quitToMenu());
     this.ui.on('nextLevel', () => this.startLevel(Math.min(this.currentLevelId + 1, LEVEL_COUNT)));
     this.ui.on('cameraToggle', () => this.cameraController.cycle());
     this.ui.on('settingsChange', (patch) => this._applySettings(patch));
+    this.ui.on('watchReplay', () => this.watchReplay());
+    this.ui.on('stopReplay', () => this.stopReplay());
+    this.ui.on('buyVehicle', (id) => this.buyVehicle(id));
+    this.ui.on('selectVehicle', (id) => this.selectVehicle(id));
   }
 
   _wireParkingEvents() {
@@ -206,6 +216,7 @@ export class GameManager {
   }
 
   startLevel(id) {
+    this._flushPlayTime();
     const clamped = Math.min(Math.max(1, id), LEVEL_COUNT);
     this.currentLevelId = clamped;
     const cfg = getLevelConfig(clamped);
@@ -220,6 +231,7 @@ export class GameManager {
     this._setupGhost(cfg);
     this._collisionCooldown = 0;
     this._boundaryCooldown = 0;
+    this.save.incrementLevelPlays(clamped);
 
     this.state = 'playing';
     this.ui.updateHUD({
@@ -237,6 +249,7 @@ export class GameManager {
 
   pauseGame() {
     if (this.state !== 'playing') return;
+    this._flushPlayTime();
     this.state = 'paused';
     this.ui.showScreen('pause');
   }
@@ -251,21 +264,111 @@ export class GameManager {
     this.startLevel(this.currentLevelId);
   }
 
+  // Shows a confirmation overlay instead of restarting immediately, for restarts that interrupt
+  // an attempt already in progress (pause menu, in-HUD button, R key). Victory/Game-Over "Retry"
+  // call restartLevel() directly since the attempt is already over there.
+  requestRestart() {
+    if (this.state !== 'playing' && this.state !== 'paused') return;
+    this._preConfirmState = this.state;
+    this.state = 'confirm-restart';
+    this.ui.showRestartConfirm();
+  }
+
+  confirmRestart() {
+    this.restartLevel();
+  }
+
+  cancelRestart() {
+    this.state = this._preConfirmState;
+    this.ui.showScreen(this.state === 'paused' ? 'pause' : 'hud');
+  }
+
   quitToMenu() {
+    this._flushPlayTime();
+    this._disposeGhost();
+    if (this.carController) this.carController.object3D.visible = true;
     this.state = 'menu';
     this.ui.showScreen('main-menu');
   }
 
+  _flushPlayTime() {
+    if (this._sessionPlayTime <= 0) return;
+    this.save.addPlayTime(this._sessionPlayTime);
+    this._sessionPlayTime = 0;
+  }
+
   _handleParkingSuccess(accuracy) {
+    this._flushPlayTime();
     this.state = 'victory';
     const breakdown = this.score.computeFinalScore(accuracy);
-    this.save.recordLevelResult(this.currentLevelId, breakdown.total, this.replayRecorder.finish());
+    this.save.recordLevelResult(
+      this.currentLevelId,
+      {
+        score: breakdown.total,
+        elapsed: this.score.elapsed,
+        accuracy,
+        collisions: this.score.collisions,
+        stars: breakdown.stars,
+      },
+      this.replayRecorder.finish()
+    );
     this._checkVehicleUnlocks();
     this.achievements.evaluateRun({ collisions: this.score.collisions, elapsed: this.score.elapsed, accuracy });
+    this.save.addCoins(breakdown.coins);
+    const dailyDone = this.save.updateDailyProgress({ stars: breakdown.stars, collisions: this.score.collisions, elapsed: this.score.elapsed });
+    for (const c of dailyDone) this.ui.showToast(`Daily complete: +${c.reward} coins`, 'success');
     this.audio.playSuccessChime();
     this.effects.emitSuccessBurst(this.carController.state.x, this.carController.state.z);
     this.ui.setNextLevelEnabled(this.currentLevelId < LEVEL_COUNT);
+    this.ui.setWatchReplayEnabled(!!this.save.getReplay(this.currentLevelId));
     this.ui.showVictory(breakdown);
+  }
+
+  // Plays back the level's saved best-run replay with a hidden real car and a ghost driven purely
+  // by GhostPlayer, camera following via the same CameraController math used during live play (fed
+  // a lightweight adapter shaped like a CarController). Triggered on-demand from the Victory screen.
+  watchReplay() {
+    const replay = this.save.getReplay(this.currentLevelId);
+    if (!replay) return;
+    this._disposeGhost();
+    this._spawnGhost(replay);
+    this.ghostPlayer.elapsed = 0;
+    if (this.carController) this.carController.object3D.visible = false;
+    this.state = 'replay';
+    this.ui.showScreen('replay');
+  }
+
+  stopReplay() {
+    this._disposeGhost();
+    if (this.carController) this.carController.object3D.visible = true;
+    this.state = 'victory';
+    this.ui.showScreen('victory');
+  }
+
+  _updateReplayPlayback(dt) {
+    if (!this.ghostPlayer || !this.ghostCar) return;
+    const sample = this.ghostPlayer.update(dt);
+    this.ghostCar.setPose(sample.x, sample.z, sample.yaw);
+    const adapter = { state: { x: sample.x, z: sample.z, yaw: sample.yaw, speed: 8 }, model: this.ghostCar.model };
+    this.cameraController.update(dt, adapter);
+  }
+
+  buyVehicle(id) {
+    const preset = VEHICLE_PRESETS.find((p) => p.id === id);
+    if (!preset || this.save.isVehicleUnlocked(id)) return;
+    if (!this.save.spendCoins(preset.cost)) {
+      this.ui.showToast('Not enough coins', 'warn');
+      return;
+    }
+    this.save.unlockVehicle(id);
+    this.ui.showToast(`${preset.name} unlocked!`, 'success');
+    this.ui.populateShop();
+  }
+
+  selectVehicle(id) {
+    if (!this.save.isVehicleUnlocked(id)) return;
+    this.save.setSelectedVehicle(id);
+    this.ui.populateShop();
   }
 
   _checkVehicleUnlocks() {
@@ -279,6 +382,7 @@ export class GameManager {
   }
 
   _triggerGameOver(reason) {
+    this._flushPlayTime();
     this.state = 'gameover';
     this.audio.playFailBuzz();
     this.ui.showGameOver(reason);
@@ -292,7 +396,10 @@ export class GameManager {
     if (this.state === 'playing') {
       if (this.input.state.pauseToggle) {
         this.pauseGame();
+      } else if (this.input.state.restartToggle) {
+        this.requestRestart();
       } else {
+        this._sessionPlayTime += dt;
         if (this.input.state.cameraToggle) this.cameraController.cycle();
 
         const result = this.carController.update(dt, this.input.state, {
@@ -303,6 +410,7 @@ export class GameManager {
         if (result.collided && result.impact > COLLISION_IMPACT_THRESHOLD && this._collisionCooldown <= 0) {
           this._collisionCooldown = COLLISION_TOAST_COOLDOWN;
           this.score.registerCollision();
+          this.save.addCollision();
           this.ui.showToast('Collision! -40', 'warn');
         }
 
@@ -338,9 +446,13 @@ export class GameManager {
           this._triggerGameOver("Time's up");
         }
       }
+    } else if (this.state === 'replay') {
+      this._updateReplayPlayback(dt);
     }
 
-    if (this.carController) this.cameraController.update(dt, this.carController);
+    if (this.state !== 'replay' && this.carController) {
+      this.cameraController.update(dt, this.carController);
+    }
     this.effects.update(dt);
     this.renderer.render(this.scene, this.camera);
   }

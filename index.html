@@ -19,9 +19,21 @@
           <div class="menu-buttons">
             <button id="btn-play" class="btn btn-primary">Play</button>
             <button id="btn-level-select" class="btn">Level Select</button>
+            <button id="btn-progress" class="btn">Progress</button>
+            <button id="btn-shop" class="btn">Shop</button>
+            <button id="btn-daily" class="btn">Daily Challenges</button>
             <button id="btn-achievements" class="btn">Achievements</button>
             <button id="btn-settings" class="btn">Settings</button>
             <button id="btn-credits" class="btn">Credits</button>
+          </div>
+          <div id="menu-overview" class="menu-overview">
+            <div class="overview-bar"><div id="overview-fill" class="overview-fill"></div></div>
+            <div class="overview-stats">
+              <span>Complete: <strong id="overview-percent">0%</strong></span>
+              <span>Stars: <strong id="overview-stars">0 / 60</strong></span>
+              <span>Coins: <strong id="overview-coins">0</strong></span>
+              <span>Vehicle: <strong id="overview-vehicle">City Hatchback</strong></span>
+            </div>
           </div>
           <div class="menu-footer">Best Score: <span id="best-score-label">0</span></div>
           <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
@@ -49,6 +61,41 @@
         </div>
       </section>
 
+      <!-- ===================== PROGRESS ===================== -->
+      <section id="screen-progress" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2>Player Progress</h2>
+          <div id="progress-stats" class="progress-stats"></div>
+          <h3 class="progress-subhead">Level Records</h3>
+          <div id="progress-level-list" class="progress-level-list"></div>
+          <h3 class="progress-subhead">Recent Achievements</h3>
+          <div id="progress-achievements" class="achievements-grid progress-achievements"></div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== SHOP ===================== -->
+      <section id="screen-shop" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2>Vehicle Shop</h2>
+          <div class="achievements-summary">Coins: <span id="shop-coins">0</span></div>
+          <div id="shop-grid" class="achievements-grid"></div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== DAILY CHALLENGES ===================== -->
+      <section id="screen-daily" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2>Daily Challenges</h2>
+          <div id="daily-grid" class="achievements-grid"></div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
       <!-- ===================== SETTINGS ===================== -->
       <section id="screen-settings" class="screen hidden">
         <div class="menu-panel">
@@ -63,6 +110,7 @@
               <option value="third">Third Person</option>
               <option value="first">First Person</option>
               <option value="top">Top Down</option>
+              <option value="reverse">Reverse Camera</option>
             </select>
           </div>
           <div class="settings-row">
@@ -102,6 +150,7 @@
           <div class="hud-chip hud-objective" id="hud-objective">Park in the marked spot</div>
           <div class="hud-chip">Score <span id="hud-score">0</span></div>
           <div class="hud-chip" id="hud-timer">02:00</div>
+          <button id="btn-hud-restart" class="btn btn-icon" title="Restart Level (R)">⟲</button>
           <button id="btn-pause" class="btn btn-icon">II</button>
         </div>
 
@@ -157,6 +206,27 @@
         </div>
       </section>
 
+      <!-- ===================== RESTART CONFIRM ===================== -->
+      <section id="screen-restart-confirm" class="screen hidden overlay">
+        <div class="menu-panel">
+          <h2>Restart Level?</h2>
+          <p class="confirm-copy">Your current timer, score, and collisions for this attempt will be reset.</p>
+          <div class="menu-buttons">
+            <button id="btn-restart-confirm" class="btn btn-primary">Restart Level</button>
+            <button id="btn-restart-cancel" class="btn btn-back">Cancel</button>
+          </div>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== REPLAY (WATCH BEST RUN) ===================== -->
+      <section id="screen-replay" class="screen hidden hud">
+        <div class="replay-bar">
+          <span id="replay-label">Watching Best Run</span>
+          <button id="btn-stop-replay" class="btn btn-icon">Stop</button>
+        </div>
+      </section>
+
       <!-- ===================== VICTORY ===================== -->
       <section id="screen-victory" class="screen hidden overlay">
         <div class="menu-panel">
@@ -165,6 +235,7 @@
           <div class="total-score">Total: <span id="victory-total">0</span></div>
           <div class="menu-buttons">
             <button id="btn-next-level" class="btn btn-primary">Next Level</button>
+            <button id="btn-watch-replay" class="btn">Watch Replay</button>
             <button id="btn-retry" class="btn">Retry</button>
             <button id="btn-victory-menu" class="btn btn-back">Menu</button>
           </div>
