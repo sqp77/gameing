@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 // Centralizes keyboard + on-screen touch input into a single polled state object.
 // Systems read `input.state` each frame rather than attaching their own listeners.
 export class InputManager {

@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import * as THREE from 'three';
 import { createCarModel } from '../entities/Car.js';
 import { getTheme } from './themes.js';

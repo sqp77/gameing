@@ -1,5 +1,12 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 const STORAGE_KEY = 'parkmaster3d.save.v1';
-const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third' };
+const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third', ghostReplay: true };
 
 function defaultSave() {
   return {
@@ -7,6 +14,9 @@ function defaultSave() {
     unlockedVehicles: ['hatchback'],
     selectedVehicle: 'hatchback',
     bestScores: {},
+    replays: {},
+    achievements: {},
+    noCollisionClearCount: 0,
     settings: { ...DEFAULT_SETTINGS },
   };
 }
@@ -84,10 +94,48 @@ export class SaveManager {
     return true;
   }
 
-  recordLevelResult(levelId, score) {
+  // `replayData` (see ReplayManager.ReplayRecorder#finish) is only kept when this run beats the
+  // previous best score, so the stored ghost always matches the stored best-score run.
+  recordLevelResult(levelId, score, replayData = null) {
     const prevBest = this.data.bestScores[levelId] || 0;
-    if (score > prevBest) this.data.bestScores[levelId] = score;
+    const improved = score > prevBest;
+    if (improved) {
+      this.data.bestScores[levelId] = score;
+      if (replayData) this.data.replays[levelId] = replayData;
+    }
     if (levelId >= this.data.unlockedLevel) this.data.unlockedLevel = Math.min(levelId + 1, 20);
     this._persist();
+    return improved;
+  }
+
+  getReplay(levelId) {
+    return this.data.replays[levelId] || null;
+  }
+
+  getAchievements() {
+    return this.data.achievements;
+  }
+
+  isAchievementUnlocked(id) {
+    return !!this.data.achievements[id]?.unlocked;
+  }
+
+  // Returns true only the first time an id is unlocked, so callers can tell "newly unlocked"
+  // apart from "already had it" without tracking that themselves.
+  unlockAchievement(id) {
+    if (this.data.achievements[id]?.unlocked) return false;
+    this.data.achievements[id] = { unlocked: true, unlockedAt: Date.now() };
+    this._persist();
+    return true;
+  }
+
+  getNoCollisionClearCount() {
+    return this.data.noCollisionClearCount;
+  }
+
+  incrementNoCollisionClearCount() {
+    this.data.noCollisionClearCount++;
+    this._persist();
+    return this.data.noCollisionClearCount;
   }
 }
