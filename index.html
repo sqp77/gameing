@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Park Master 3D</title>
+    <meta name="author" content="Saud (GitHub: sqp77)" />
+    <title>Park Master 3D — by Saud (sqp77)</title>
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body>
@@ -18,9 +19,12 @@
           <div class="menu-buttons">
             <button id="btn-play" class="btn btn-primary">Play</button>
             <button id="btn-level-select" class="btn">Level Select</button>
+            <button id="btn-achievements" class="btn">Achievements</button>
             <button id="btn-settings" class="btn">Settings</button>
+            <button id="btn-credits" class="btn">Credits</button>
           </div>
           <div class="menu-footer">Best Score: <span id="best-score-label">0</span></div>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -30,6 +34,18 @@
           <h2>Select Level</h2>
           <div id="level-grid" class="level-grid"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== ACHIEVEMENTS ===================== -->
+      <section id="screen-achievements" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2>Achievements</h2>
+          <div class="achievements-summary" id="achievements-summary">0 / 0 Unlocked</div>
+          <div id="achievements-grid" class="achievements-grid"></div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -56,6 +72,24 @@
           <div class="settings-row">
             <label>Shadows</label>
             <input type="checkbox" id="setting-shadows" checked />
+          </div>
+          <div class="settings-row">
+            <label>Ghost Replay</label>
+            <input type="checkbox" id="setting-ghost-replay" checked />
+          </div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== CREDITS ===================== -->
+      <section id="screen-credits" class="screen hidden">
+        <div class="menu-panel">
+          <h2>Credits</h2>
+          <div class="credits-content">
+            <div class="credits-game-title">ParkMaster<span>3D</span></div>
+            <p class="credits-line">Developed for Owner: <strong>Saud</strong></p>
+            <p class="credits-line">GitHub: <a href="https://github.com/sqp77" target="_blank" rel="noopener noreferrer">sqp77</a></p>
           </div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
         </div>
@@ -97,7 +131,16 @@
           <span>Hold position to complete parking...</span>
         </div>
 
+        <div id="radar-widget" class="radar-widget hidden">
+          <canvas id="radar-canvas" width="112" height="112"></canvas>
+        </div>
+
         <div id="toast-container" class="toast-container"></div>
+
+        <div id="level-intro-banner" class="level-intro-banner">
+          <div class="level-intro-number">Level <span id="level-intro-num">1</span></div>
+          <div class="level-intro-credit">Owner: Saud | GitHub: sqp77</div>
+        </div>
       </section>
 
       <!-- ===================== PAUSE ===================== -->
@@ -110,6 +153,7 @@
             <button id="btn-pause-settings" class="btn">Settings</button>
             <button id="btn-quit" class="btn btn-back">Quit to Menu</button>
           </div>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -124,6 +168,7 @@
             <button id="btn-retry" class="btn">Retry</button>
             <button id="btn-victory-menu" class="btn btn-back">Menu</button>
           </div>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -136,12 +181,18 @@
             <button id="btn-gameover-retry" class="btn btn-primary">Retry</button>
             <button id="btn-gameover-menu" class="btn btn-back">Menu</button>
           </div>
+          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
         </div>
       </section>
 
+      <div id="achievement-popup-container" class="achievement-popup-container"></div>
+
+      <div id="ownership-watermark" class="ownership-watermark">Owner: Saud &middot; GitHub: sqp77</div>
+
       <div id="loading-screen" class="screen loading">
         <div class="loader"></div>
-        <div class="loading-text">Loading Park Master 3D...</div>
+        <div class="loading-text">Loading ParkMaster 3D...</div>
+        <div class="loading-credit">Owner: Saud | GitHub: sqp77</div>
       </div>
     </div>
 

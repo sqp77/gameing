@@ -1,19 +1,34 @@
-import { EventEmitter } from '../utils/EventEmitter.js';
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
 
-const SCREEN_SUFFIXES = ['main-menu', 'level-select', 'settings', 'hud', 'pause', 'victory', 'gameover'];
+import { EventEmitter } from '../utils/EventEmitter.js';
+import { ACHIEVEMENTS } from '../data/achievements.js';
+
+const SCREEN_SUFFIXES = ['main-menu', 'level-select', 'achievements', 'settings', 'credits', 'hud', 'pause', 'victory', 'gameover'];
 const ELEMENT_IDS = [
   'loading-screen',
-  'screen-main-menu', 'screen-level-select', 'screen-settings', 'screen-hud', 'screen-pause', 'screen-victory', 'screen-gameover',
-  'btn-play', 'btn-level-select', 'btn-settings', 'best-score-label',
+  'screen-main-menu', 'screen-level-select', 'screen-achievements', 'screen-settings', 'screen-credits', 'screen-hud', 'screen-pause', 'screen-victory', 'screen-gameover',
+  'btn-play', 'btn-level-select', 'btn-achievements', 'btn-settings', 'btn-credits', 'best-score-label',
   'level-grid',
-  'setting-volume', 'setting-camera', 'setting-sensitivity', 'setting-shadows',
+  'achievements-grid', 'achievements-summary',
+  'setting-volume', 'setting-camera', 'setting-sensitivity', 'setting-shadows', 'setting-ghost-replay',
   'hud-level', 'hud-objective', 'hud-score', 'hud-timer', 'btn-pause', 'hud-speed', 'hud-gear',
   'btn-camera-toggle', 'mobile-controls',
   'parking-progress', 'parking-progress-fill', 'toast-container',
+  'radar-widget', 'radar-canvas', 'achievement-popup-container',
+  'level-intro-banner', 'level-intro-num',
   'btn-resume', 'btn-restart', 'btn-pause-settings', 'btn-quit',
   'score-breakdown', 'victory-total', 'btn-next-level', 'btn-retry', 'btn-victory-menu',
   'gameover-reason', 'btn-gameover-retry', 'btn-gameover-menu',
 ];
+
+const RADAR_RANGE = 18; // meters — must match TrafficManager's WARNING_RADIUS
+const RADAR_TYPE_COLORS = { pedestrian: '#ffd166', trafficCar: '#ff5252', cart: '#ffa63d', cone: '#ff6a1a' };
+const ACHIEVEMENT_POPUP_MS = 3000;
 
 // Binds every DOM id already present in index.html to methods/events. Emits UI intent
 // events (EventEmitter) for GameManager to act on rather than importing GameManager
@@ -39,6 +54,11 @@ export class UIManager extends EventEmitter {
       this._settingsReturnScreen = 'main-menu';
       this.showScreen('settings');
     });
+    this.el['btn-achievements'].addEventListener('click', () => {
+      this.populateAchievements();
+      this.showScreen('achievements');
+    });
+    this.el['btn-credits'].addEventListener('click', () => this.showScreen('credits'));
 
     for (const btn of document.querySelectorAll('[data-back]')) {
       if (btn.closest('#screen-settings')) {
@@ -70,12 +90,14 @@ export class UIManager extends EventEmitter {
     this.el['setting-camera'].addEventListener('change', (e) => this.emit('settingsChange', { camera: e.target.value }));
     this.el['setting-sensitivity'].addEventListener('input', (e) => this.emit('settingsChange', { sensitivity: Number(e.target.value) / 100 }));
     this.el['setting-shadows'].addEventListener('change', (e) => this.emit('settingsChange', { shadows: e.target.checked }));
+    this.el['setting-ghost-replay'].addEventListener('change', (e) => this.emit('settingsChange', { ghostReplay: e.target.checked }));
   }
 
   _applySettingsToInputs() {
     const s = this.save.getSettings();
     this.el['setting-volume'].value = Math.round(s.volume * 100);
     this.el['setting-camera'].value = s.camera;
+    this.el['setting-ghost-replay'].checked = s.ghostReplay;
     this.el['setting-sensitivity'].value = Math.round(s.sensitivity * 100);
     this.el['setting-shadows'].checked = s.shadows;
     this.el['best-score-label'].textContent = this.save.getOverallBestScore();
@@ -127,6 +149,95 @@ export class UIManager extends EventEmitter {
     }
   }
 
+  populateAchievements() {
+    const unlocked = this.save.getAchievements();
+    const grid = this.el['achievements-grid'];
+    grid.innerHTML = '';
+    let unlockedCount = 0;
+    for (const def of ACHIEVEMENTS) {
+      const isUnlocked = !!unlocked[def.id]?.unlocked;
+      if (isUnlocked) unlockedCount++;
+      const card = document.createElement('div');
+      card.className = 'achievement-card' + (isUnlocked ? ' unlocked' : ' locked');
+      card.innerHTML = `
+        <div class="achievement-icon">${def.icon}</div>
+        <div class="achievement-body">
+          <div class="achievement-name">${def.name}</div>
+          <div class="achievement-desc">${def.description}</div>
+        </div>`;
+      grid.appendChild(card);
+    }
+    const pct = Math.round((unlockedCount / ACHIEVEMENTS.length) * 100);
+    this.el['achievements-summary'].textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} Unlocked (${pct}%)`;
+  }
+
+  // Queues unlock banners so simultaneous unlocks (e.g. Combo Master alongside the achievements
+  // that triggered it) display one after another instead of overlapping.
+  queueAchievementPopup(def) {
+    this._popupQueue = this._popupQueue || [];
+    this._popupQueue.push(def);
+    if (!this._popupShowing) this._showNextAchievementPopup();
+  }
+
+  _showNextAchievementPopup() {
+    const def = this._popupQueue.shift();
+    if (!def) {
+      this._popupShowing = false;
+      return;
+    }
+    this._popupShowing = true;
+    const popup = document.createElement('div');
+    popup.className = 'achievement-popup';
+    popup.innerHTML = `
+      <div class="achievement-popup-icon">${def.icon}</div>
+      <div class="achievement-popup-text">
+        <div class="achievement-popup-title">Achievement Unlocked</div>
+        <div class="achievement-popup-name">${def.name}</div>
+        <div class="achievement-popup-desc">${def.description}</div>
+      </div>`;
+    this.el['achievement-popup-container'].appendChild(popup);
+    setTimeout(() => {
+      popup.remove();
+      this._showNextAchievementPopup();
+    }, ACHIEVEMENT_POPUP_MS);
+  }
+
+  // Draws nearby dynamic-traffic blips relative to the car's own heading (car fixed at radar
+  // center, always pointing "up") — cheap 2D canvas draw, no screen-space projection needed.
+  // Forward/lateral decomposition matches the convention already used in CarController.js.
+  updateRadar(carState, agents) {
+    this.el['radar-widget'].classList.toggle('hidden', agents.length === 0);
+    if (agents.length === 0) return;
+    if (!this._radarCtx) this._radarCtx = this.el['radar-canvas'].getContext('2d');
+    const ctx = this._radarCtx;
+    const size = this.el['radar-canvas'].width;
+    const center = size / 2;
+    const scale = (center - 8) / RADAR_RANGE;
+    const fx = Math.cos(carState.yaw);
+    const fz = Math.sin(carState.yaw);
+    const lx = -Math.sin(carState.yaw);
+    const lz = Math.cos(carState.yaw);
+
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = 'rgba(0,229,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(center, center, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    for (const agent of agents) {
+      const dx = agent.x - carState.x;
+      const dz = agent.z - carState.z;
+      const forwardComp = dx * fx + dz * fz;
+      const lateralComp = dx * lx + dz * lz;
+      const px = center + lateralComp * scale;
+      const py = center - forwardComp * scale;
+      ctx.fillStyle = RADAR_TYPE_COLORS[agent.type] || '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   updateHUD({ level, score, timeRemaining, speedKmh, gear, objective }) {
     this.el['hud-level'].textContent = level;
     this.el['hud-score'].textContent = Math.round(score);
@@ -138,6 +249,16 @@ export class UIManager extends EventEmitter {
     this.el['hud-speed'].textContent = Math.round(speedKmh);
     this.el['hud-gear'].textContent = gear;
     this.el['hud-gear'].classList.toggle('reverse', gear === 'R');
+  }
+
+  // Brief non-blocking banner shown when a level starts — fades out on its own via CSS animation.
+  showLevelIntro(levelNum) {
+    this.el['level-intro-num'].textContent = levelNum;
+    const banner = this.el['level-intro-banner'];
+    banner.classList.remove('show');
+    // Force reflow so re-triggering the animation works on consecutive same-level starts (retry).
+    void banner.offsetWidth;
+    banner.classList.add('show');
   }
 
   showParkingProgress(ratio) {

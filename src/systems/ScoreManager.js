@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import { EventEmitter } from '../utils/EventEmitter.js';
 
 const PENALTY_COLLISION = 40;

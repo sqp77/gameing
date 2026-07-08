@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 // Data-driven definitions for all 20 levels. A handful (1-6) are hand-placed to teach
 // mechanics in order; 7-20 are generated from a difficulty table via a seeded RNG so
 // obstacle placement varies slightly but stays deterministic per level id.
@@ -9,8 +16,9 @@
 // box's long (depth) axis points along `heading` — i.e. the direction a car's nose
 // points when correctly parked in it.
 import { degToRad, makeSeededRandom } from '../utils/MathUtils.js';
+import { getTheme } from './themes.js';
 
-const AISLE_HALF_WIDTH = 4.2; // driving lane half-width running along the X axis at z=0
+export const AISLE_HALF_WIDTH = 4.2; // driving lane half-width running along the X axis at z=0
 const PARALLEL_LANE_OFFSET = 2.9; // lateral offset of a parallel bay's near edge from the lane center
 
 function poseToBox(type, x, z, heading, width, length, extra) {
@@ -212,21 +220,24 @@ const HAND_LEVELS = { 1: level1, 2: level2, 3: level3, 4: level4, 5: level5, 6: 
 // ---------------------------------------------------------------------------
 // Procedural levels 7-20, driven by a per-level difficulty table.
 // ---------------------------------------------------------------------------
+// `traffic` gives TrafficManager per-level obstacle density (see TrafficManager.js) — counts
+// scale up gradually across 7-20 so the last few levels are noticeably busier than the first few.
+// Hand-authored levels 1-6 intentionally have none, to keep the tutorial arc uncluttered.
 const PROCEDURAL_TABLE = {
-  7: { theme: 'airport', type: 'perpendicular', width: 2.5, depth: 5.2, gap: 0.55, decoys: 1, time: 100 },
-  8: { theme: 'downtown', type: 'parallel', width: 2.6, depth: 6.0, gap: 0.5, decoys: 0, time: 115 },
-  9: { theme: 'mall', type: 'angled', width: 2.45, depth: 5.0, gap: 0.5, decoys: 1, time: 95 },
-  10: { theme: 'airport', type: 'perpendicular', width: 2.3, depth: 4.9, gap: 0.4, decoys: 1, time: 90, barrier: true },
-  11: { theme: 'downtown', type: 'perpendicular', width: 2.5, depth: 5.1, gap: 0.5, decoys: 2, time: 95 },
-  12: { theme: 'drivingSchool', type: 'perpendicular', width: 2.4, depth: 5.0, gap: 0.45, decoys: 0, time: 100, requireReverse: true },
-  13: { theme: 'mall', type: 'parallel', width: 2.5, depth: 5.6, gap: 0.35, decoys: 0, time: 105 },
-  14: { theme: 'airport', type: 'angled', width: 2.35, depth: 4.9, gap: 0.4, decoys: 1, time: 95, requireReverse: true },
-  15: { theme: 'downtown', type: 'perpendicular', width: 2.3, depth: 4.9, gap: 0.4, decoys: 3, time: 90 },
-  16: { theme: 'mall', type: 'parallel', width: 2.4, depth: 5.3, gap: 0.3, decoys: 0, time: 100 },
-  17: { theme: 'downtown', type: 'parallel', width: 2.4, depth: 5.6, gap: 0.35, decoys: 0, time: 100, requireReverse: true, night: true },
-  18: { theme: 'downtown', type: 'perpendicular', width: 2.25, depth: 4.8, gap: 0.35, decoys: 2, time: 85, night: true },
-  19: { theme: 'downtown', type: 'angled', width: 2.2, depth: 4.8, gap: 0.3, decoys: 1, time: 85, requireReverse: true, night: true },
-  20: { theme: 'downtown', type: 'parallel', width: 2.15, depth: 5.1, gap: 0.25, decoys: 1, time: 90, requireReverse: true, night: true, extraCones: true },
+  7: { theme: 'airport', type: 'perpendicular', width: 2.5, depth: 5.2, gap: 0.55, decoys: 1, time: 100, traffic: { pedestrians: 1 } },
+  8: { theme: 'downtown', type: 'parallel', width: 2.6, depth: 6.0, gap: 0.5, decoys: 0, time: 115, traffic: { pedestrians: 1 } },
+  9: { theme: 'mall', type: 'angled', width: 2.45, depth: 5.0, gap: 0.5, decoys: 1, time: 95, traffic: { pedestrians: 1, carts: 1 } },
+  10: { theme: 'airport', type: 'perpendicular', width: 2.3, depth: 4.9, gap: 0.4, decoys: 1, time: 90, barrier: true, traffic: { pedestrians: 1, crossers: 1 } },
+  11: { theme: 'downtown', type: 'perpendicular', width: 2.5, depth: 5.1, gap: 0.5, decoys: 2, time: 95, traffic: { pedestrians: 2 } },
+  12: { theme: 'drivingSchool', type: 'perpendicular', width: 2.4, depth: 5.0, gap: 0.45, decoys: 0, time: 100, requireReverse: true, traffic: { pedestrians: 1, crossers: 1 } },
+  13: { theme: 'mall', type: 'parallel', width: 2.5, depth: 5.6, gap: 0.35, decoys: 0, time: 105, traffic: { pedestrians: 1, carts: 1 } },
+  14: { theme: 'airport', type: 'angled', width: 2.35, depth: 4.9, gap: 0.4, decoys: 1, time: 95, requireReverse: true, traffic: { pedestrians: 2, crossers: 1 } },
+  15: { theme: 'downtown', type: 'perpendicular', width: 2.3, depth: 4.9, gap: 0.4, decoys: 3, time: 90, traffic: { pedestrians: 2, carts: 1 } },
+  16: { theme: 'mall', type: 'parallel', width: 2.4, depth: 5.3, gap: 0.3, decoys: 0, time: 100, traffic: { pedestrians: 1, crossers: 1 } },
+  17: { theme: 'downtown', type: 'parallel', width: 2.4, depth: 5.6, gap: 0.35, decoys: 0, time: 100, requireReverse: true, night: true, traffic: { pedestrians: 2, crossers: 1 } },
+  18: { theme: 'downtown', type: 'perpendicular', width: 2.25, depth: 4.8, gap: 0.35, decoys: 2, time: 85, night: true, traffic: { pedestrians: 2, crossers: 1, carts: 1 } },
+  19: { theme: 'downtown', type: 'angled', width: 2.2, depth: 4.8, gap: 0.3, decoys: 1, time: 85, requireReverse: true, night: true, traffic: { pedestrians: 2, crossers: 2 } },
+  20: { theme: 'downtown', type: 'parallel', width: 2.15, depth: 5.1, gap: 0.25, decoys: 1, time: 90, requireReverse: true, night: true, extraCones: true, traffic: { pedestrians: 3, crossers: 2, carts: 1, cones: 2 } },
 };
 
 function buildProceduralLevel(id) {
@@ -301,6 +312,7 @@ function buildProceduralLevel(id) {
     carStart,
     spots,
     obstacles,
+    traffic: cfg.traffic || {},
     objective:
       cfg.decoys > 0
         ? 'Park in the highlighted spot — ignore the decoys'
@@ -317,6 +329,8 @@ export const LEVEL_COUNT = 20;
 
 export function getLevelConfig(id) {
   const clamped = Math.min(Math.max(1, id), LEVEL_COUNT);
-  if (HAND_LEVELS[clamped]) return HAND_LEVELS[clamped]();
-  return buildProceduralLevel(clamped);
+  const cfg = HAND_LEVELS[clamped] ? HAND_LEVELS[clamped]() : buildProceduralLevel(clamped);
+  cfg.traffic = cfg.traffic || {};
+  cfg.effectiveNight = cfg.night || getTheme(cfg.theme).night;
+  return cfg;
 }

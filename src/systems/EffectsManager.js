@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import * as THREE from 'three';
 
 const MAX_SKID = 400;

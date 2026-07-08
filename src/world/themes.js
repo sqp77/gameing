@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 // Visual + environmental presets for each parking area. Pure data (colors, densities,
 // light settings) consumed by WorldBuilder — no geometry lives here so themes stay
 // swappable/extendable without touching build logic.

@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import * as THREE from 'three';
 import { clamp, damp } from '../utils/MathUtils.js';
 

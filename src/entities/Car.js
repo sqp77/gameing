@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import * as THREE from 'three';
 
 // Named, unlockable vehicle presets. Dimensions are in meters and drive both

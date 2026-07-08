@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 // All sound is synthesized at runtime via the Web Audio API so the game has
 // zero binary asset dependencies. Engine pitch/volume tracks vehicle speed live.
 export class AudioManager {

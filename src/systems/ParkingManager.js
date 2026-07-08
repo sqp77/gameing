@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import { OBB2D } from '../utils/OBB.js';
 import { clamp, shortestAngleDelta } from '../utils/MathUtils.js';
 import { carOBBFromState } from './PhysicsManager.js';

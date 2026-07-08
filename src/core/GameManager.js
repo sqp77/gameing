@@ -1,3 +1,10 @@
+/*
+ * ParkMaster3D
+ * Owner: Saud
+ * GitHub: sqp77
+ * =============
+ */
+
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { InputManager } from './InputManager.js';
@@ -8,9 +15,13 @@ import { CameraController } from '../systems/CameraController.js';
 import { ParkingManager } from '../systems/ParkingManager.js';
 import { ScoreManager } from '../systems/ScoreManager.js';
 import { EffectsManager } from '../systems/EffectsManager.js';
+import { TrafficManager } from '../systems/TrafficManager.js';
+import { AchievementManager } from '../systems/AchievementManager.js';
+import { ReplayRecorder, GhostPlayer } from '../systems/ReplayManager.js';
 import { WorldBuilder } from '../world/WorldBuilder.js';
 import { UIManager } from '../ui/UIManager.js';
 import { CarController } from '../entities/CarController.js';
+import { GhostCar } from '../entities/GhostCar.js';
 import { VEHICLE_PRESETS } from '../entities/Car.js';
 import { getLevelConfig, LEVEL_COUNT } from '../world/levels.js';
 
@@ -46,12 +57,17 @@ export class GameManager {
     this.physics = new PhysicsManager();
     this.effects = new EffectsManager(this.scene);
     this.world = new WorldBuilder(this.scene, this.physics);
+    this.traffic = new TrafficManager(this.scene, this.physics);
     this.parking = new ParkingManager();
     this.score = new ScoreManager();
+    this.achievements = new AchievementManager(this.save);
+    this.replayRecorder = new ReplayRecorder();
     this.cameraController = new CameraController(this.camera);
     this.ui = new UIManager(this.save);
 
     this.carController = null;
+    this.ghostCar = null;
+    this.ghostPlayer = null;
     this.currentLevelId = 1;
     this.currentLevelConfig = null;
     this.state = 'menu';
@@ -64,6 +80,7 @@ export class GameManager {
 
     this._wireUIEvents();
     this._wireParkingEvents();
+    this._wireAchievementEvents();
     window.addEventListener('resize', () => this._onResize());
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.pauseGame();
@@ -98,11 +115,31 @@ export class GameManager {
     });
   }
 
+  _wireAchievementEvents() {
+    this.achievements.on('unlocked', (def) => this.ui.queueAchievementPopup(def));
+  }
+
   _applySettings(patch) {
     this.save.updateSettings(patch);
     if ('volume' in patch) this.audio.setVolume(patch.volume);
     if ('shadows' in patch) this.renderer.shadowMap.enabled = patch.shadows;
     if ('camera' in patch) this.cameraController.setMode(patch.camera);
+    if ('ghostReplay' in patch) this._applyGhostReplaySetting(patch.ghostReplay);
+  }
+
+  // Toggling the setting mid-level takes effect immediately rather than waiting for the next
+  // level: turning it off hides the ghost right away, turning it on (if a best replay exists for
+  // the level in progress) spawns one synced to the current run's elapsed time.
+  _applyGhostReplaySetting(enabled) {
+    if (!enabled) {
+      this._disposeGhost();
+      return;
+    }
+    if (this.state !== 'playing' || this.ghostCar) return;
+    const replay = this.save.getReplay(this.currentLevelId);
+    if (!replay) return;
+    this._spawnGhost(replay);
+    this.ghostPlayer.elapsed = this.replayRecorder.duration;
   }
 
   _onResize() {
@@ -142,17 +179,45 @@ export class GameManager {
     });
   }
 
+  // Resets the recorder for the new attempt and, if ghost replay is enabled and a best run is
+  // saved for this level, spawns a GhostCar driven by a fresh GhostPlayer. The ghost never touches
+  // PhysicsManager/ParkingManager — it's pure playback, moved only via setPose() in the game loop.
+  _setupGhost(cfg) {
+    this._disposeGhost();
+    this.replayRecorder.start(this._pickVehiclePreset().id);
+    if (!this.save.getSettings().ghostReplay) return;
+    const replay = this.save.getReplay(cfg.id);
+    if (replay) this._spawnGhost(replay);
+  }
+
+  _spawnGhost(replay) {
+    const preset = VEHICLE_PRESETS.find((p) => p.id === replay.vehicleId) || VEHICLE_PRESETS[0];
+    this.ghostCar = new GhostCar(preset);
+    this.scene.add(this.ghostCar.object3D);
+    this.ghostPlayer = new GhostPlayer(replay);
+  }
+
+  _disposeGhost() {
+    if (!this.ghostCar) return;
+    this.scene.remove(this.ghostCar.object3D);
+    this.ghostCar.dispose();
+    this.ghostCar = null;
+    this.ghostPlayer = null;
+  }
+
   startLevel(id) {
     const clamped = Math.min(Math.max(1, id), LEVEL_COUNT);
     this.currentLevelId = clamped;
     const cfg = getLevelConfig(clamped);
     this.currentLevelConfig = cfg;
 
-    this.world.build(cfg);
+    const { theme } = this.world.build(cfg);
+    this.traffic.build(cfg, theme);
     this.parking.setSpots(cfg.spots);
     this.score.reset(cfg.timeLimit);
     this.effects.clearLevel();
     this._spawnCar(cfg.carStart);
+    this._setupGhost(cfg);
     this._collisionCooldown = 0;
     this._boundaryCooldown = 0;
 
@@ -167,6 +232,7 @@ export class GameManager {
     });
     this.ui.showParkingProgress(0);
     this.ui.showScreen('hud');
+    this.ui.showLevelIntro(clamped);
   }
 
   pauseGame() {
@@ -193,8 +259,9 @@ export class GameManager {
   _handleParkingSuccess(accuracy) {
     this.state = 'victory';
     const breakdown = this.score.computeFinalScore(accuracy);
-    this.save.recordLevelResult(this.currentLevelId, breakdown.total);
+    this.save.recordLevelResult(this.currentLevelId, breakdown.total, this.replayRecorder.finish());
     this._checkVehicleUnlocks();
+    this.achievements.evaluateRun({ collisions: this.score.collisions, elapsed: this.score.elapsed, accuracy });
     this.audio.playSuccessChime();
     this.effects.emitSuccessBurst(this.carController.state.x, this.carController.state.z);
     this.ui.setNextLevelEnabled(this.currentLevelId < LEVEL_COUNT);
@@ -248,6 +315,14 @@ export class GameManager {
 
         const parkResult = this.parking.update(dt, this.carController.state);
         this.ui.showParkingProgress(parkResult.progress);
+
+        this.replayRecorder.record(dt, this.carController.state);
+        if (this.ghostPlayer) {
+          const ghostSample = this.ghostPlayer.update(dt);
+          this.ghostCar.setPose(ghostSample.x, ghostSample.z, ghostSample.yaw);
+        }
+        const nearbyTraffic = this.traffic.update(dt, this.carController.state);
+        this.ui.updateRadar(this.carController.state, nearbyTraffic);
 
         const timeRemaining = this.score.tick(dt);
         this.ui.updateHUD({
