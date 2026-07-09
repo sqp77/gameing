@@ -1,9 +1,9 @@
 {
-  "name": "gameing",
+  "name": "masar",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "author": "Saud (GitHub: sqp77)",
+  "author": "Saud Alqhtani (GitHub: sqp77)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

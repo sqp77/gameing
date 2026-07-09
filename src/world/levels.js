@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -327,10 +327,20 @@ function buildProceduralLevel(id) {
 
 export const LEVEL_COUNT = 20;
 
+// Derives the display parking-type id (parallel/reverse/perpendicular/angled) from the
+// target spot's own data — `requireReverse` takes priority over the base shape since a
+// reverse-in challenge is presented as its own category regardless of bay shape.
+function resolveParkingType(spots) {
+  const target = spots.find((s) => s.isTarget) || spots[0];
+  if (!target) return 'perpendicular';
+  return target.requireReverse ? 'reverse' : target.type;
+}
+
 export function getLevelConfig(id) {
   const clamped = Math.min(Math.max(1, id), LEVEL_COUNT);
   const cfg = HAND_LEVELS[clamped] ? HAND_LEVELS[clamped]() : buildProceduralLevel(clamped);
   cfg.traffic = cfg.traffic || {};
   cfg.effectiveNight = cfg.night || getTheme(cfg.theme).night;
+  cfg.parkingType = resolveParkingType(cfg.spots);
   return cfg;
 }

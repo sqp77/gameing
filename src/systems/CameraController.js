@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -8,11 +8,11 @@
 import * as THREE from 'three';
 import { clamp, damp } from '../utils/MathUtils.js';
 
-const MODES = ['third', 'first', 'top'];
+const MODES = ['third', 'first', 'top', 'reverse'];
 
-// Drives the single game camera across three modes (third-person chase, first-person
-// driver view, high top-down chase), smoothing both position and look-at target so
-// mode switches and car motion never produce a hard cut.
+// Drives the single game camera across four modes (third-person chase, first-person
+// driver view, high top-down chase, rear-mounted reverse/parking camera), smoothing both
+// position and look-at target so mode switches and car motion never produce a hard cut.
 export class CameraController {
   constructor(camera) {
     this.camera = camera;
@@ -53,6 +53,15 @@ export class CameraController {
       desiredPos.set(x - forward.x * 5, 19, z - forward.z * 5);
       desiredLook.set(x, 0, z);
       fov = 48;
+    } else if (this.mode === 'reverse') {
+      // Rear-mounted backup camera: mounted low at the back bumper, wide-angle, looking
+      // backward (opposite the first-person driver view) so it reads what's behind the car.
+      const { rideHeight, dimensions } = car.model;
+      const mountHeight = rideHeight + dimensions.height * 0.55;
+      const mountBack = dimensions.length * 0.52;
+      desiredPos.set(x - forward.x * mountBack, mountHeight, z - forward.z * mountBack);
+      desiredLook.set(x - forward.x * 14, mountHeight - 0.4, z - forward.z * 14);
+      fov = 78;
     } else {
       const dist = 7.6;
       const height = 3.3;
@@ -67,7 +76,7 @@ export class CameraController {
       this._fov = fov;
       this._initialized = true;
     } else {
-      const posLambda = this.mode === 'first' ? 14 : 8;
+      const posLambda = this.mode === 'first' || this.mode === 'reverse' ? 14 : 8;
       this._pos.x = damp(this._pos.x, desiredPos.x, posLambda, dt);
       this._pos.y = damp(this._pos.y, desiredPos.y, posLambda, dt);
       this._pos.z = damp(this._pos.z, desiredPos.z, posLambda, dt);

@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -14,6 +14,7 @@ export const VEHICLE_PRESETS = [
     id: 'hatchback',
     name: 'City Hatchback',
     unlockLevel: 1,
+    cost: 0,
     color: 0x2ec4ff,
     length: 4.0,
     width: 1.8,
@@ -28,6 +29,7 @@ export const VEHICLE_PRESETS = [
     id: 'sedan',
     name: 'Sport Sedan',
     unlockLevel: 6,
+    cost: 200,
     color: 0xff5252,
     length: 4.6,
     width: 1.85,
@@ -42,6 +44,7 @@ export const VEHICLE_PRESETS = [
     id: 'suv',
     name: 'Urban SUV',
     unlockLevel: 11,
+    cost: 400,
     color: 0xffc233,
     length: 4.8,
     width: 2.0,
@@ -56,6 +59,7 @@ export const VEHICLE_PRESETS = [
     id: 'coupe',
     name: 'Speed Coupe',
     unlockLevel: 16,
+    cost: 650,
     color: 0xb388ff,
     length: 4.3,
     width: 1.9,

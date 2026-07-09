@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -16,11 +16,13 @@ export class InputManager {
       handbrake: false,
       cameraToggle: false, // edge-triggered, consumed by CameraController
       pauseToggle: false,
+      restartToggle: false, // edge-triggered, consumed by GameManager
     };
 
     this._keys = new Set();
     this._cameraKeyLatch = false;
     this._pauseKeyLatch = false;
+    this._restartKeyLatch = false;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
@@ -71,14 +73,13 @@ export class InputManager {
       () => (this._touchHandbrake = false)
     );
 
-    const camBtn = document.getElementById('btn-camera-toggle');
-    camBtn?.addEventListener('click', () => (this._touchCameraToggle = true));
-
+    // Note: the CAM button itself is NOT bound here — UIManager already wires its 'click' event
+    // straight to CameraController.cycle() (works identically for mouse and touch taps), so binding
+    // it a second time here would double-cycle the camera on every press.
     this._touchThrottle = 0;
     this._touchBrake = 0;
     this._touchSteer = 0;
     this._touchHandbrake = false;
-    this._touchCameraToggle = false;
   }
 
   isMobile() {
@@ -98,16 +99,15 @@ export class InputManager {
     this.state.handbrake = k.has('Space') || this._touchHandbrake;
 
     const cameraKeyDown = k.has('KeyC');
-    if ((cameraKeyDown && !this._cameraKeyLatch) || this._touchCameraToggle) {
-      this.state.cameraToggle = true;
-    } else {
-      this.state.cameraToggle = false;
-    }
+    this.state.cameraToggle = cameraKeyDown && !this._cameraKeyLatch;
     this._cameraKeyLatch = cameraKeyDown;
-    this._touchCameraToggle = false;
 
     const pauseKeyDown = k.has('Escape') || k.has('KeyP');
     this.state.pauseToggle = pauseKeyDown && !this._pauseKeyLatch;
     this._pauseKeyLatch = pauseKeyDown;
+
+    const restartKeyDown = k.has('KeyR');
+    this.state.restartToggle = restartKeyDown && !this._restartKeyLatch;
+    this._restartKeyLatch = restartKeyDown;
   }
 }

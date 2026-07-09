@@ -1,6 +1,13 @@
-# ParkMaster3D
+# مسار | MASAR
 
-A precision 3D parking simulator built with Three.js — 20 hand-crafted and procedurally varied levels, ghost replays, achievements, dynamic traffic, and a full arcade-style scoring system.
+
+![Saudi-inspired 3D driving & parking simulator](/docs/img/1.png)
+
+A Saudi-inspired 3D driving & parking simulator built with Three.js — 20
+hand-crafted and procedurally varied levels, ghost replays, achievements,
+dynamic traffic, and a full arcade-style scoring system, set in parking
+environments with local Saudi flavor (bilingual Arabic/English signage,
+Saudi flags, and Gulf-inspired architecture).
 
 ## Features
 
@@ -9,7 +16,11 @@ A precision 3D parking simulator built with Three.js — 20 hand-crafted and pro
 - Ghost car replays of your best runs
 - Achievements system
 - Traffic and pedestrian hazards
+- Local accounts with per-profile save slots, plus manual save export/import
+- Bilingual Arabic/English signage and light Saudi environmental theming
 - Desktop (keyboard) and mobile (touch) controls
+
+![Saudi-inspired 3D driving & parking simulator](/docs/img/2.png)
 
 ## Getting Started
 
@@ -22,7 +33,7 @@ npm run preview  # preview the production build
 
 ## Credits
 
-**ParkMaster3D**
+**مسار | MASAR**
 
-Developed for Owner: **Saud**
+Created by **Saud Alqhtani**
 GitHub: [sqp77](https://github.com/sqp77)
