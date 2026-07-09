@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import { createCarModel } from '../entities/Car.js';
 import { getTheme } from './themes.js';
 import { makeSeededRandom } from '../utils/MathUtils.js';
+import { AISLE_HALF_WIDTH } from './levels.js';
+import { SAUDI_STREET_NAMES } from '../data/saudiTheme.js';
 
 const OBSTACLE_CAR_COLORS = [0x8a8f97, 0x5c6470, 0x9c7a5a, 0x4a5568, 0x6b6f76, 0x7c8590, 0xa3b1c2];
 
@@ -24,6 +26,9 @@ export class WorldBuilder {
     this.group = new THREE.Group();
     this.group.name = 'world';
     this.scene.add(this.group);
+    this._lampLights = [];
+    this._flags = [];
+    this._elapsed = 0;
   }
 
   clear() {
@@ -31,7 +36,24 @@ export class WorldBuilder {
       const child = this.group.children.pop();
       this._disposeRecursive(child);
     }
+    this._lampLights = [];
+    this._flags = [];
+    this._elapsed = 0;
     this.physics.reset();
+  }
+
+  // Subtle flicker on night-level streetlights (Environment Polish), plus a gentle flutter on any
+  // Saudi flags placed this level. Both are cheap — only a handful of lights/flags exist per
+  // level, and both arrays are no-ops on levels that have neither.
+  update(dt) {
+    this._elapsed += dt;
+    for (let i = 0; i < this._lampLights.length; i++) {
+      const { light, base } = this._lampLights[i];
+      light.intensity = base + Math.sin(this._elapsed * 1.5 + i) * base * 0.18;
+    }
+    for (let i = 0; i < this._flags.length; i++) {
+      this._flags[i].rotation.y = Math.sin(this._elapsed * 2 + i) * 0.15;
+    }
   }
 
   _disposeRecursive(obj) {
@@ -62,6 +84,8 @@ export class WorldBuilder {
     this._buildTrees(themed, halfX, halfZ, rng);
     this._buildStreetlights(themed, halfX, halfZ, rng);
     this._buildSigns(levelConfig.spots);
+    this._buildEntranceSign(levelConfig.carStart);
+    this._buildStreetSign(levelConfig.carStart, rng);
     this._buildSpotMarkings(themed, levelConfig.spots);
     this._buildObstacles(rng, levelConfig.obstacles);
 
@@ -130,6 +154,9 @@ export class WorldBuilder {
   _buildBuildings(theme, halfX, halfZ, rng) {
     const spacing = 10;
     const depthOffset = 8;
+    // Modern Gulf-style parapet cap: one extra thin box per building, reusing the theme's own
+    // curb tone (no new material concept) — a cheap architectural nod rather than a remodel.
+    const parapetMat = new THREE.MeshStandardMaterial({ color: theme.curb, roughness: 0.75 });
     const place = (x, z) => {
       const h = theme.buildingHeights[0] + rng() * (theme.buildingHeights[1] - theme.buildingHeights[0]);
       const w = 6 + rng() * 5;
@@ -143,6 +170,7 @@ export class WorldBuilder {
         emissiveIntensity: theme.night ? 0.12 : 0,
       });
       this._mkBox(w, h, d, x, h / 2, z, mat);
+      this._mkBox(w * 0.92, 0.35, d * 0.92, x, h + 0.17, z, parapetMat);
     };
     const countX = Math.max(2, Math.round(((halfX * 2) / spacing) * theme.propDensity));
     for (let i = 0; i < countX; i++) {
@@ -155,6 +183,13 @@ export class WorldBuilder {
       const z = -halfZ + rng() * halfZ * 2;
       place(halfX + depthOffset + rng() * 6, z);
       place(-(halfX + depthOffset + rng() * 6), z);
+    }
+
+    // One Saudi flag near the building cluster, sparingly: only for civic-feel themes (downtown's
+    // government/city buildings, driving-school areas), never per-building, so it never overcrowds
+    // the map.
+    if (theme.id === 'downtown' || theme.id === 'drivingSchool') {
+      this._buildFlag(halfX * 0.35, (halfZ + depthOffset) * (rng() < 0.5 ? 1 : -1));
     }
   }
 
@@ -229,9 +264,34 @@ export class WorldBuilder {
         const light = new THREE.PointLight(theme.lampColor, 8, 15, 2);
         light.position.set(x, 4.0, z);
         this.group.add(light);
+        this._lampLights.push({ light, base: 8 });
       }
     }
     this.group.add(poleMesh, headMesh);
+  }
+
+  // Bilingual "P" + Arabic "هنا" (here) wayfinding texture for the target spot's sign board —
+  // same CanvasTexture pattern as _makeMarkingTexture(). Generic sans-serif (not the Tajawal web
+  // font) since this is a one-time 3D texture snapshot, not DOM text, so there's no font-load race.
+  _makeTargetSignTexture() {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size * 0.67;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a6fd4';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 52px sans-serif';
+    ctx.fillText('P', canvas.width * 0.32, canvas.height * 0.52);
+    ctx.font = '24px sans-serif';
+    ctx.direction = 'rtl';
+    ctx.fillText('هنا', canvas.width * 0.68, canvas.height * 0.52);
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
   }
 
   _buildSigns(spots) {
@@ -240,7 +300,7 @@ export class WorldBuilder {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
     const board = new THREE.Mesh(
       new THREE.BoxGeometry(0.9, 0.6, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x1a6fd4, emissive: 0x0a3060, emissiveIntensity: 0.4 })
+      new THREE.MeshStandardMaterial({ map: this._makeTargetSignTexture(), emissive: 0x0a3060, emissiveIntensity: 0.4 })
     );
     const perp = { x: -Math.sin(target.heading), z: Math.cos(target.heading) };
     const dist = target.halfWidth + 2.4;
@@ -269,9 +329,145 @@ export class WorldBuilder {
     ctx.lineWidth = isTarget ? 11 : 7;
     const m = 14;
     ctx.strokeRect(m, m, size - 2 * m, size - 2 * m);
+    // Improved parking spot indicator: chevrons on the target spot only, pointing along the
+    // canvas' horizontal (heading) axis so the player can read the intended entry direction at a
+    // glance. Decoys are left plain so "ignore the decoys" levels stay unambiguous.
+    if (isTarget) {
+      const midY = size / 2;
+      ctx.lineWidth = 7;
+      for (const cx of [size * 0.35, size * 0.5, size * 0.65]) {
+        ctx.beginPath();
+        ctx.moveTo(cx - 16, midY - 20);
+        ctx.lineTo(cx + 16, midY);
+        ctx.lineTo(cx - 16, midY + 20);
+        ctx.stroke();
+      }
+    }
     const tex = new THREE.CanvasTexture(canvas);
     if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
+  }
+
+  // Bilingual "P" / "موقف" (parking) entrance sign near the level's car spawn — cheap decorative
+  // flavor, same pole+board primitive as _buildSigns, offset onto the near sidewalk so it never
+  // overlaps the driving lane or spots.
+  _buildEntranceSign(carStart) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a6fd4';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 60px sans-serif';
+    ctx.fillText('P', size / 2, size * 0.4);
+    ctx.font = '22px sans-serif';
+    ctx.direction = 'rtl';
+    ctx.fillText('موقف', size / 2, size * 0.78);
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.7, 0.06),
+      new THREE.MeshStandardMaterial({ map: tex, emissive: 0x0a3060, emissiveIntensity: 0.35 })
+    );
+    const sx = carStart.x - 2;
+    const sz = -(AISLE_HALF_WIDTH + 1.4);
+    pole.position.set(sx, 1.3, sz);
+    board.position.set(sx, 2.75, sz);
+    pole.castShadow = true;
+    board.castShadow = true;
+    this.group.add(pole, board);
+  }
+
+  // Green bilingual road-name placard, real Saudi-style signage (Arabic name over an English
+  // transliteration) — one per level, deterministically picked from the level's own seeded rng,
+  // placed on the sidewalk opposite the entrance sign so the two never overlap.
+  _makeStreetSignTexture(nameAr, nameEn) {
+    const w = 512;
+    const h = 160;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0d6b3a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(8, 8, w - 16, h - 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.direction = 'rtl';
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillText(nameAr, w / 2, 66);
+    ctx.direction = 'ltr';
+    ctx.font = '28px sans-serif';
+    ctx.fillText(nameEn, w / 2, 118);
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _buildStreetSign(carStart, rng) {
+    const entry = SAUDI_STREET_NAMES[Math.floor(rng() * SAUDI_STREET_NAMES.length)];
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.8, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 0.5, 0.05),
+      new THREE.MeshStandardMaterial({ map: this._makeStreetSignTexture(entry.ar, entry.en) })
+    );
+    const sx = carStart.x + 3;
+    const sz = AISLE_HALF_WIDTH + 1.4;
+    pole.position.set(sx, 1.4, sz);
+    board.position.set(sx, 2.6, sz);
+    pole.castShadow = true;
+    board.castShadow = true;
+    this.group.add(pole, board);
+  }
+
+  // Simple green-field Saudi flag texture — a plain white sword silhouette drawn with canvas
+  // primitives (no calligraphy attempted, keeping this tasteful and font-independent).
+  _makeFlagTexture() {
+    const w = 128;
+    const h = Math.round(w * 0.67);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f7b3c';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    const midY = h * 0.62;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.18, midY);
+    ctx.lineTo(w * 0.82, midY);
+    ctx.stroke();
+    ctx.fillRect(w * 0.15, midY - 5, w * 0.08, 10);
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _buildFlag(x, z) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.06, 3.4, 6),
+      new THREE.MeshStandardMaterial({ color: 0xcfd4d8, roughness: 0.4, metalness: 0.6 })
+    );
+    pole.position.set(x, 1.7, z);
+    pole.castShadow = true;
+    const flag = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.9, 0.6),
+      new THREE.MeshStandardMaterial({ map: this._makeFlagTexture(), roughness: 0.8, side: THREE.DoubleSide })
+    );
+    flag.position.set(x + 0.47, 3.05, z);
+    flag.castShadow = true;
+    this.group.add(pole, flag);
+    this._flags.push(flag);
   }
 
   _buildSpotMarkings(theme, spots) {

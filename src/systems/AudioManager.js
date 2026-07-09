@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -191,6 +191,23 @@ export class AudioManager {
     gain.connect(this.masterGain);
     osc.start();
     osc.stop(ctx.currentTime + 0.6);
+  }
+
+  // Short blip for the parking-assist proximity sensor; pitch rises as intensity (closeness)
+  // increases, same lightweight synth style as playUIClick.
+  playProximityBeep(intensity = 1) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 700 + intensity * 500;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.09);
   }
 
   playUIClick() {

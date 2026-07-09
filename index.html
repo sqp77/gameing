@@ -3,19 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="author" content="Saud (GitHub: sqp77)" />
-    <title>Park Master 3D — by Saud (sqp77)</title>
+    <meta name="author" content="Saud Alqhtani (GitHub: sqp77)" />
+    <title>MASAR | مسار — by Saud Alqhtani (sqp77)</title>
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body>
     <div id="app">
       <canvas id="game-canvas"></canvas>
 
+      <!-- ===================== AUTH (LOGIN / SIGN UP) ===================== -->
+      <section id="screen-auth" class="screen">
+        <div class="menu-panel auth-panel">
+          <div class="auth-logo">
+            <h1 class="game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></h1>
+            <p class="game-subtitle">
+              <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
+              <span class="subtitle-en">Smart Driving &amp; Parking Simulator</span>
+            </p>
+          </div>
+          <p class="auth-welcome" id="auth-welcome">Sign in to save your progress across sessions</p>
+
+          <div id="auth-account-list" class="auth-account-list hidden"></div>
+
+          <div id="auth-provider-list" class="auth-provider-list">
+            <button class="btn auth-provider-btn provider-apple" data-provider="apple">
+              <span class="auth-provider-icon">A</span>Sign in with Apple
+            </button>
+            <button class="btn auth-provider-btn provider-google" data-provider="google">
+              <span class="auth-provider-icon">G</span>Sign in with Google
+            </button>
+            <button class="btn auth-provider-btn provider-facebook" data-provider="facebook">
+              <span class="auth-provider-icon">f</span>Sign in with Facebook
+            </button>
+            <button class="btn auth-provider-btn provider-xbox" data-provider="xbox">
+              <span class="auth-provider-icon">X</span>Sign in with Xbox
+            </button>
+          </div>
+
+          <div id="auth-form" class="auth-form hidden">
+            <div class="settings-row auth-form-row">
+              <label>Display Name</label>
+              <input type="text" id="auth-name" maxlength="24" placeholder="Your name" />
+            </div>
+            <div class="settings-row auth-form-row">
+              <label>Email (optional)</label>
+              <input type="email" id="auth-email" placeholder="you@example.com" />
+            </div>
+            <div class="menu-buttons">
+              <button id="auth-confirm" class="btn btn-primary">Continue</button>
+              <button id="auth-cancel" class="btn btn-back">Cancel</button>
+            </div>
+          </div>
+
+          <button id="btn-auth-skip" class="btn-link auth-skip">Continue as Guest</button>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+        </div>
+      </section>
+
       <!-- ===================== MAIN MENU ===================== -->
       <section id="screen-main-menu" class="screen">
         <div class="menu-panel">
-          <h1 class="game-title">PARK<span>MASTER</span> 3D</h1>
-          <p class="game-subtitle">Precision Parking Simulator</p>
+          <h1 class="game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></h1>
+          <p class="game-subtitle">
+            <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
+            <span class="subtitle-en">Smart Driving &amp; Parking Simulator</span>
+          </p>
+
+          <div id="account-bar" class="account-bar hidden">
+            <div class="account-avatar" id="account-avatar"></div>
+            <div class="account-info">
+              <div class="account-welcome" id="account-welcome">Welcome, Driver</div>
+              <div class="account-substats" id="account-substats">0 coins · Level 1 · 0★</div>
+            </div>
+          </div>
+
           <div class="menu-buttons">
             <button id="btn-play" class="btn btn-primary">Play</button>
             <button id="btn-level-select" class="btn">Level Select</button>
@@ -25,6 +86,11 @@
             <button id="btn-achievements" class="btn">Achievements</button>
             <button id="btn-settings" class="btn">Settings</button>
             <button id="btn-credits" class="btn">Credits</button>
+          </div>
+          <div class="account-actions">
+            <button id="btn-sign-in" class="btn hidden">Sign In</button>
+            <button id="btn-profile" class="btn hidden">Profile</button>
+            <button id="btn-menu-logout" class="btn btn-back hidden">Logout</button>
           </div>
           <div id="menu-overview" class="menu-overview">
             <div class="overview-bar"><div id="overview-fill" class="overview-fill"></div></div>
@@ -36,7 +102,7 @@
             </div>
           </div>
           <div class="menu-footer">Best Score: <span id="best-score-label">0</span></div>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -46,7 +112,7 @@
           <h2>Select Level</h2>
           <div id="level-grid" class="level-grid"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -57,7 +123,7 @@
           <div class="achievements-summary" id="achievements-summary">0 / 0 Unlocked</div>
           <div id="achievements-grid" class="achievements-grid"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -71,7 +137,7 @@
           <h3 class="progress-subhead">Recent Achievements</h3>
           <div id="progress-achievements" class="achievements-grid progress-achievements"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -82,7 +148,7 @@
           <div class="achievements-summary">Coins: <span id="shop-coins">0</span></div>
           <div id="shop-grid" class="achievements-grid"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -92,7 +158,7 @@
           <h2>Daily Challenges</h2>
           <div id="daily-grid" class="achievements-grid"></div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -125,8 +191,42 @@
             <label>Ghost Replay</label>
             <input type="checkbox" id="setting-ghost-replay" checked />
           </div>
+          <div class="settings-row">
+            <label>Parking Assist</label>
+            <input type="checkbox" id="setting-assist" checked />
+          </div>
+          <div class="settings-row">
+            <label>Save Data</label>
+            <div class="save-io-buttons">
+              <button id="btn-export-save" class="btn card-btn">Export</button>
+              <button id="btn-import-save" class="btn card-btn">Import</button>
+              <input type="file" id="input-import-save" accept="application/json" class="hidden" />
+            </div>
+          </div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+        </div>
+      </section>
+
+      <!-- ===================== PROFILE ===================== -->
+      <section id="screen-profile" class="screen hidden">
+        <div class="menu-panel">
+          <h2>Profile</h2>
+          <div class="profile-header">
+            <div class="profile-avatar" id="profile-avatar"></div>
+            <div class="profile-name" id="profile-name">Driver</div>
+            <div class="profile-provider-badge" id="profile-provider">Google</div>
+          </div>
+          <div class="profile-details">
+            <div class="profile-row"><label>Email</label><span id="profile-email">—</span></div>
+            <div class="profile-row"><label>Member Since</label><span id="profile-created">—</span></div>
+          </div>
+          <div class="menu-buttons">
+            <button id="btn-switch-account" class="btn">Switch Account</button>
+            <button id="btn-logout" class="btn btn-back">Logout</button>
+          </div>
+          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -135,8 +235,9 @@
         <div class="menu-panel">
           <h2>Credits</h2>
           <div class="credits-content">
-            <div class="credits-game-title">ParkMaster<span>3D</span></div>
-            <p class="credits-line">Developed for Owner: <strong>Saud</strong></p>
+            <div class="credits-game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></div>
+            <p class="credits-tagline">Smart Driving &amp; Parking Simulator — محاكي القيادة والاصطفاف الذكي</p>
+            <p class="credits-line">Created by <strong>Saud Alqhtani</strong></p>
             <p class="credits-line">GitHub: <a href="https://github.com/sqp77" target="_blank" rel="noopener noreferrer">sqp77</a></p>
           </div>
           <button class="btn btn-back" data-back="main-menu">Back</button>
@@ -184,11 +285,23 @@
           <canvas id="radar-canvas" width="112" height="112"></canvas>
         </div>
 
+        <div id="assist-widget" class="assist-widget hidden">
+          <div class="assist-row">
+            <span class="assist-label">FRONT</span>
+            <div class="assist-bar"><div id="assist-front-fill" class="assist-fill"></div></div>
+          </div>
+          <div class="assist-row">
+            <span class="assist-label">REAR</span>
+            <div class="assist-bar"><div id="assist-rear-fill" class="assist-fill"></div></div>
+          </div>
+        </div>
+
         <div id="toast-container" class="toast-container"></div>
 
         <div id="level-intro-banner" class="level-intro-banner">
           <div class="level-intro-number">Level <span id="level-intro-num">1</span></div>
-          <div class="level-intro-credit">Owner: Saud | GitHub: sqp77</div>
+          <div class="level-intro-type" id="level-intro-type"></div>
+          <div class="level-intro-credit">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -202,7 +315,7 @@
             <button id="btn-pause-settings" class="btn">Settings</button>
             <button id="btn-quit" class="btn btn-back">Quit to Menu</button>
           </div>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -215,7 +328,7 @@
             <button id="btn-restart-confirm" class="btn btn-primary">Restart Level</button>
             <button id="btn-restart-cancel" class="btn btn-back">Cancel</button>
           </div>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -231,6 +344,11 @@
       <section id="screen-victory" class="screen hidden overlay">
         <div class="menu-panel">
           <h2 class="victory-title">Parked!</h2>
+          <div class="rating-block">
+            <div class="rating-badge" id="victory-rating">Great</div>
+            <div class="rating-bar"><div id="rating-fill" class="rating-fill"></div></div>
+            <div class="rating-percent" id="rating-percent">0%</div>
+          </div>
           <div class="score-breakdown" id="score-breakdown"></div>
           <div class="total-score">Total: <span id="victory-total">0</span></div>
           <div class="menu-buttons">
@@ -239,7 +357,7 @@
             <button id="btn-retry" class="btn">Retry</button>
             <button id="btn-victory-menu" class="btn btn-back">Menu</button>
           </div>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
@@ -252,18 +370,18 @@
             <button id="btn-gameover-retry" class="btn btn-primary">Retry</button>
             <button id="btn-gameover-menu" class="btn btn-back">Menu</button>
           </div>
-          <div class="ownership-footer">Owner: Saud | GitHub: sqp77</div>
+          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
         </div>
       </section>
 
       <div id="achievement-popup-container" class="achievement-popup-container"></div>
 
-      <div id="ownership-watermark" class="ownership-watermark">Owner: Saud &middot; GitHub: sqp77</div>
+      <div id="ownership-watermark" class="ownership-watermark">Created by Saud Alqhtani &middot; GitHub: sqp77</div>
 
       <div id="loading-screen" class="screen loading">
         <div class="loader"></div>
-        <div class="loading-text">Loading ParkMaster 3D...</div>
-        <div class="loading-credit">Owner: Saud | GitHub: sqp77</div>
+        <div class="loading-text">Loading MASAR<span class="loading-ar"> — مسار</span></div>
+        <div class="loading-credit">Created by Saud Alqhtani | GitHub: sqp77</div>
       </div>
     </div>
 

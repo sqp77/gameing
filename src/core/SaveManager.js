@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -10,7 +10,7 @@ import { makeSeededRandom } from '../utils/MathUtils.js';
 import { CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
 
 const STORAGE_KEY = 'parkmaster3d.save.v1';
-const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third', ghostReplay: true };
+const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third', ghostReplay: true, assist: true };
 const LEVEL_COUNT = 20;
 
 function defaultSave() {
@@ -25,7 +25,17 @@ function defaultSave() {
     noCollisionClearCount: 0,
     settings: { ...DEFAULT_SETTINGS },
     levelStats: {},
-    totals: { playTimeSec: 0, completedParks: 0, collisions: 0, coinsEarned: 0 },
+    totals: {
+      playTimeSec: 0,
+      completedParks: 0,
+      collisions: 0,
+      coinsEarned: 0,
+      distanceMeters: 0,
+      restarts: 0,
+      accuracySum: 0,
+      accuracyCount: 0,
+    },
+    vehicleUsage: {},
     coins: 0,
     daily: { date: '', items: [] },
   };
@@ -41,6 +51,7 @@ function defaultLevelStats() {
     stars: 0,
     bestTimeSec: null,
     bestAccuracy: null,
+    bestRatingValue: null,
     lowestCollisions: null,
     timesCompleted: 0,
     timesPlayed: 0,
@@ -50,26 +61,39 @@ function defaultLevelStats() {
 // Thin localStorage wrapper: unlocked levels/vehicles, best score per level, and
 // persisted settings. Every mutator persists immediately (writes are tiny and rare —
 // once per level result / settings change — so no batching is needed).
+//
+// Account-aware save slots (used by AuthManager): data lives at STORAGE_KEY for the
+// device's "guest" slot, or at `STORAGE_KEY.acct.<id>` once a local account is active.
+// `_currentAccountId` starts null, so a player who never touches auth gets byte-identical
+// behavior to before — same key, same load/persist path.
 export class SaveManager {
   constructor() {
-    this.data = this._load();
+    this._currentAccountId = null;
+    this.data = this._loadFrom(this._keyFor(null));
   }
 
-  _load() {
+  _keyFor(accountId) {
+    return accountId ? `${STORAGE_KEY}.acct.${accountId}` : STORAGE_KEY;
+  }
+
+  _normalize(parsed) {
+    return {
+      ...defaultSave(),
+      ...parsed,
+      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
+      levelStats: { ...(parsed.levelStats || {}) },
+      totals: { ...defaultSave().totals, ...(parsed.totals || {}) },
+      vehicleUsage: { ...(parsed.vehicleUsage || {}) },
+    };
+  }
+
+  _loadFrom(key) {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(key);
       if (!raw) return defaultSave();
-      const parsed = JSON.parse(raw);
-      const merged = {
-        ...defaultSave(),
-        ...parsed,
-        settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
-        levelStats: { ...(parsed.levelStats || {}) },
-        totals: { ...defaultSave().totals, ...(parsed.totals || {}) },
-      };
+      const merged = this._normalize(JSON.parse(raw));
       if (this._migrateLevelStats(merged)) {
-        this.data = merged;
-        this._persist();
+        this._persistTo(key, merged);
       }
       return merged;
     } catch {
@@ -98,11 +122,61 @@ export class SaveManager {
     return migrated;
   }
 
-  _persist() {
+  _persistTo(key, data) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      localStorage.setItem(key, JSON.stringify(data));
     } catch {
       /* storage unavailable (private mode / quota) — game still works, just won't persist */
+    }
+  }
+
+  _persist() {
+    this._persistTo(this._keyFor(this._currentAccountId), this.data);
+  }
+
+  // ---- Account/session coordination (used by AuthManager; no-ops if auth is never used) ----
+
+  // Re-tags the currently-loaded (guest) data as belonging to `accountId` without reloading —
+  // used only the very first time a local account is ever created on this device, so existing
+  // pre-login progress becomes that account's progress instead of being replaced by a blank save.
+  claimGuestData(accountId) {
+    this._currentAccountId = accountId;
+    this._persist();
+  }
+
+  // Flushes the active save to its current slot (guest or account) and loads `accountId`'s slot
+  // (or the guest slot if `accountId` is null) — used for login to an existing profile, logout,
+  // and switching between profiles. No data is ever lost: the slot being left is always written
+  // before the new one is read.
+  switchAccount(accountId) {
+    this._persist();
+    this._currentAccountId = accountId;
+    this.data = this._loadFrom(this._keyFor(accountId));
+  }
+
+  deleteAccountData(accountId) {
+    try {
+      localStorage.removeItem(this._keyFor(accountId));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Manual cross-device transfer: this build has no backend to sync automatically, so "cloud
+  // save" is a JSON export/import the player carries between devices themselves.
+  exportSnapshot() {
+    return JSON.stringify(this.data);
+  }
+
+  importSnapshot(json) {
+    try {
+      const parsed = JSON.parse(json);
+      if (!parsed || typeof parsed !== 'object' || !parsed.settings) return false;
+      this.data = this._normalize(parsed);
+      this._persist();
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -155,7 +229,7 @@ export class SaveManager {
   // independently of score, since the run with the highest score isn't necessarily the fastest
   // or the most accurate one.
   recordLevelResult(levelId, result, replayData = null) {
-    const { score, elapsed, accuracy, collisions, stars } = result;
+    const { score, elapsed, accuracy, collisions, stars, ratingValue } = result;
     const prevBest = this.data.bestScores[levelId] || 0;
     const improved = score > prevBest;
     if (improved) {
@@ -168,11 +242,16 @@ export class SaveManager {
     stats.stars = Math.max(stats.stars, stars);
     stats.bestTimeSec = stats.bestTimeSec === null ? elapsed : Math.min(stats.bestTimeSec, elapsed);
     stats.bestAccuracy = stats.bestAccuracy === null ? accuracy : Math.max(stats.bestAccuracy, accuracy);
+    if (ratingValue != null) {
+      stats.bestRatingValue = stats.bestRatingValue === null ? ratingValue : Math.max(stats.bestRatingValue, ratingValue);
+    }
     stats.lowestCollisions = stats.lowestCollisions === null ? collisions : Math.min(stats.lowestCollisions, collisions);
     stats.timesCompleted += 1;
     this.data.levelStats[levelId] = stats;
 
     this.data.totals.completedParks += 1;
+    this.data.totals.accuracySum += accuracy;
+    this.data.totals.accuracyCount += 1;
 
     if (levelId >= this.data.unlockedLevel) this.data.unlockedLevel = Math.min(levelId + 1, LEVEL_COUNT);
     this._persist();
@@ -208,6 +287,44 @@ export class SaveManager {
   addCollision() {
     this.data.totals.collisions += 1;
     this._persist();
+  }
+
+  addDistance(meters) {
+    if (meters <= 0) return;
+    this.data.totals.distanceMeters += meters;
+    this._persist();
+  }
+
+  addRestart() {
+    this.data.totals.restarts += 1;
+    this._persist();
+  }
+
+  // Counts a play (not necessarily a completion) per vehicle so "favorite vehicle" reflects what
+  // the player actually drives, same spirit as incrementLevelPlays for levels.
+  addVehicleUsage(id) {
+    this.data.vehicleUsage[id] = (this.data.vehicleUsage[id] || 0) + 1;
+    this._persist();
+  }
+
+  getFavoriteVehicle() {
+    const entries = Object.entries(this.data.vehicleUsage);
+    if (entries.length === 0) return this.data.selectedVehicle;
+    return entries.sort((a, b) => b[1] - a[1])[0][0];
+  }
+
+  // Reuses levelStats.timesPlayed (already tracked by incrementLevelPlays) rather than a
+  // separate counter.
+  getFavoriteLevel() {
+    let best = null;
+    let bestPlays = 0;
+    for (const [levelId, stats] of Object.entries(this.data.levelStats)) {
+      if (stats.timesPlayed > bestPlays) {
+        bestPlays = stats.timesPlayed;
+        best = Number(levelId);
+      }
+    }
+    return best;
   }
 
   getCoins() {
@@ -291,11 +408,17 @@ export class SaveManager {
       if (stats) totalStars += stats.stars;
       if (stats && stats.bestAccuracy != null) bestAccuracy = Math.max(bestAccuracy, stats.bestAccuracy);
     }
+    const { accuracySum, accuracyCount } = this.data.totals;
     return {
       playTimeSec: this.data.totals.playTimeSec,
       completedParks: this.data.totals.completedParks,
       collisions: this.data.totals.collisions,
       coinsEarned: this.data.totals.coinsEarned,
+      distanceMeters: this.data.totals.distanceMeters,
+      restarts: this.data.totals.restarts,
+      averageAccuracy: accuracyCount > 0 ? accuracySum / accuracyCount : 0,
+      favoriteVehicleId: this.getFavoriteVehicle(),
+      favoriteLevelId: this.getFavoriteLevel(),
       bestAccuracy,
       levelsCompleted,
       totalStars,

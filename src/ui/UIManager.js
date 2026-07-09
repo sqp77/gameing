@@ -1,6 +1,6 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
@@ -8,29 +8,41 @@
 import { EventEmitter } from '../utils/EventEmitter.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
 import { VEHICLE_PRESETS } from '../entities/Car.js';
-import { LEVEL_COUNT } from '../world/levels.js';
+import { LEVEL_COUNT, getLevelConfig } from '../world/levels.js';
+import { PARKING_TYPE_LABELS, PARKING_TYPE_GLYPHS } from '../data/parkingTypes.js';
+import { ratingLabelForValue } from '../utils/scoring.js';
+import { PROVIDER_LABELS } from '../core/AuthManager.js';
 
 const SCREEN_SUFFIXES = [
-  'main-menu', 'level-select', 'achievements', 'settings', 'credits', 'progress', 'shop', 'daily',
+  'auth', 'main-menu', 'level-select', 'achievements', 'settings', 'credits', 'progress', 'shop', 'daily', 'profile',
   'hud', 'pause', 'victory', 'gameover', 'restart-confirm', 'replay',
 ];
 const ELEMENT_IDS = [
   'loading-screen',
-  'screen-main-menu', 'screen-level-select', 'screen-achievements', 'screen-settings', 'screen-credits', 'screen-progress',
-  'screen-shop', 'screen-daily',
+  'screen-auth', 'screen-main-menu', 'screen-level-select', 'screen-achievements', 'screen-settings', 'screen-credits', 'screen-progress',
+  'screen-shop', 'screen-daily', 'screen-profile',
   'screen-hud', 'screen-pause', 'screen-victory', 'screen-gameover', 'screen-restart-confirm', 'screen-replay',
   'btn-play', 'btn-level-select', 'btn-achievements', 'btn-settings', 'btn-credits', 'btn-progress', 'best-score-label',
   'btn-shop', 'btn-daily', 'shop-grid', 'shop-coins', 'daily-grid',
+  'auth-welcome', 'auth-account-list', 'auth-provider-list', 'auth-form', 'auth-name', 'auth-email',
+  'auth-confirm', 'auth-cancel', 'btn-auth-skip',
+  'account-bar', 'account-avatar', 'account-welcome', 'account-substats',
+  'btn-profile', 'btn-sign-in', 'btn-menu-logout',
+  'profile-avatar', 'profile-name', 'profile-provider', 'profile-email', 'profile-created',
+  'btn-switch-account', 'btn-logout',
+  'btn-export-save', 'btn-import-save', 'input-import-save',
   'level-grid',
   'achievements-grid', 'achievements-summary',
-  'setting-volume', 'setting-camera', 'setting-sensitivity', 'setting-shadows', 'setting-ghost-replay',
+  'setting-volume', 'setting-camera', 'setting-sensitivity', 'setting-shadows', 'setting-ghost-replay', 'setting-assist',
   'hud-level', 'hud-objective', 'hud-score', 'hud-timer', 'btn-pause', 'btn-hud-restart', 'hud-speed', 'hud-gear',
   'btn-camera-toggle', 'mobile-controls',
   'parking-progress', 'parking-progress-fill', 'toast-container',
   'radar-widget', 'radar-canvas', 'achievement-popup-container',
-  'level-intro-banner', 'level-intro-num',
+  'assist-widget', 'assist-front-fill', 'assist-rear-fill',
+  'level-intro-banner', 'level-intro-num', 'level-intro-type',
   'btn-resume', 'btn-restart', 'btn-pause-settings', 'btn-quit',
-  'score-breakdown', 'victory-total', 'btn-next-level', 'btn-retry', 'btn-victory-menu', 'btn-watch-replay',
+  'score-breakdown', 'victory-total', 'victory-rating', 'rating-fill', 'rating-percent',
+  'btn-next-level', 'btn-retry', 'btn-victory-menu', 'btn-watch-replay',
   'gameover-reason', 'btn-gameover-retry', 'btn-gameover-menu',
   'btn-restart-confirm', 'btn-restart-cancel',
   'btn-stop-replay', 'replay-label',
@@ -63,14 +75,21 @@ function formatPlayTime(totalSeconds) {
   return `${s}s`;
 }
 
+function formatDistance(meters) {
+  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`;
+  return `${Math.round(meters)} m`;
+}
+
 // Binds every DOM id already present in index.html to methods/events. Emits UI intent
 // events (EventEmitter) for GameManager to act on rather than importing GameManager
 // directly, keeping this a one-way (DOM -> game) + (game -> DOM update) boundary.
 export class UIManager extends EventEmitter {
-  constructor(saveManager) {
+  constructor(saveManager, authManager) {
     super();
     this.save = saveManager;
+    this.auth = authManager;
     this._settingsReturnScreen = 'main-menu';
+    this._pendingAuthProvider = null;
     this.el = {};
     for (const id of ELEMENT_IDS) this.el[id] = document.getElementById(id);
     this._wireButtons();
@@ -104,7 +123,6 @@ export class UIManager extends EventEmitter {
       this.populateDaily();
       this.showScreen('daily');
     });
-
     for (const btn of document.querySelectorAll('[data-back]')) {
       if (btn.closest('#screen-settings')) {
         btn.addEventListener('click', () => this.showScreen(this._settingsReturnScreen));
@@ -141,6 +159,126 @@ export class UIManager extends EventEmitter {
     this.el['setting-sensitivity'].addEventListener('input', (e) => this.emit('settingsChange', { sensitivity: Number(e.target.value) / 100 }));
     this.el['setting-shadows'].addEventListener('change', (e) => this.emit('settingsChange', { shadows: e.target.checked }));
     this.el['setting-ghost-replay'].addEventListener('change', (e) => this.emit('settingsChange', { ghostReplay: e.target.checked }));
+    this.el['setting-assist'].addEventListener('change', (e) => this.emit('settingsChange', { assist: e.target.checked }));
+
+    // ----- Auth screen -----
+    for (const btn of document.querySelectorAll('.auth-provider-btn')) {
+      btn.addEventListener('click', () => this._openAuthForm(btn.dataset.provider));
+    }
+    this.el['auth-confirm'].addEventListener('click', () => this._submitAuthForm());
+    this.el['auth-cancel'].addEventListener('click', () => this._closeAuthForm());
+    this.el['btn-auth-skip'].addEventListener('click', () => this.showScreen('main-menu'));
+
+    // ----- Account bar / profile -----
+    this.el['btn-profile'].addEventListener('click', () => this.showScreen('profile'));
+    this.el['btn-sign-in'].addEventListener('click', () => this.showScreen('auth'));
+    this.el['btn-menu-logout'].addEventListener('click', () => this.emit('logout'));
+    this.el['btn-logout'].addEventListener('click', () => this.emit('logout'));
+    this.el['btn-switch-account'].addEventListener('click', () => this.showScreen('auth'));
+
+    // ----- Save export/import (manual cross-device transfer, see SaveManager.exportSnapshot) -----
+    this.el['btn-export-save'].addEventListener('click', () => this._exportSave());
+    this.el['btn-import-save'].addEventListener('click', () => this.el['input-import-save'].click());
+    this.el['input-import-save'].addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) this.emit('importSaveFile', file);
+      e.target.value = '';
+    });
+  }
+
+  _openAuthForm(provider) {
+    this._pendingAuthProvider = provider;
+    this.el['auth-name'].value = '';
+    this.el['auth-email'].value = '';
+    this.el['auth-form'].classList.remove('hidden');
+    this.el['auth-provider-list'].classList.add('hidden');
+    this.el['auth-name'].focus();
+  }
+
+  _closeAuthForm() {
+    this._pendingAuthProvider = null;
+    this.el['auth-form'].classList.add('hidden');
+    this.el['auth-provider-list'].classList.remove('hidden');
+  }
+
+  _submitAuthForm() {
+    const name = this.el['auth-name'].value.trim();
+    if (!name) {
+      this.el['auth-name'].focus();
+      return;
+    }
+    this.emit('authProviderLogin', { provider: this._pendingAuthProvider, name, email: this.el['auth-email'].value.trim() });
+    this._closeAuthForm();
+  }
+
+  _exportSave() {
+    const blob = new Blob([this.save.exportSnapshot()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'masar-save.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Renders the "continue as" list of local profiles already on this device (avatar/name/
+  // provider badge + a small remove control) above the four provider buttons used to add a new
+  // one. Reused every time the auth screen is shown so a fresh signup/removal is reflected.
+  populateAuthScreen() {
+    const accounts = this.auth.getAccounts();
+    const list = this.el['auth-account-list'];
+    list.innerHTML = '';
+    list.classList.toggle('hidden', accounts.length === 0);
+    for (const acct of accounts) {
+      const tile = document.createElement('div');
+      tile.className = 'auth-account-tile';
+      tile.innerHTML = `
+        <div class="auth-avatar" style="background:hsl(${acct.avatarHue},65%,42%)">${(acct.name[0] || '?').toUpperCase()}</div>
+        <div class="auth-account-info">
+          <div class="auth-account-name">${acct.name}</div>
+          <div class="auth-account-provider">${PROVIDER_LABELS[acct.provider] || acct.provider}</div>
+        </div>
+        <button class="auth-account-remove" title="Remove from this device">&times;</button>`;
+      tile.addEventListener('click', (e) => {
+        if (e.target.closest('.auth-account-remove')) return;
+        this.emit('authSelectAccount', acct.id);
+      });
+      tile.querySelector('.auth-account-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.emit('authRemoveAccount', acct.id);
+      });
+      list.appendChild(tile);
+    }
+    this._closeAuthForm();
+    this.el['auth-welcome'].textContent =
+      accounts.length > 0 ? 'Choose a profile or sign in with a new account' : 'Sign in to save your progress across sessions';
+  }
+
+  populateProfile() {
+    const acct = this.auth.getActiveAccount();
+    if (!acct) return; // guests can't reach this screen (button hidden), but stay safe
+    this.el['profile-avatar'].style.background = `hsl(${acct.avatarHue},65%,42%)`;
+    this.el['profile-avatar'].textContent = (acct.name[0] || '?').toUpperCase();
+    this.el['profile-name'].textContent = acct.name;
+    this.el['profile-provider'].textContent = PROVIDER_LABELS[acct.provider] || acct.provider;
+    this.el['profile-email'].textContent = acct.email || 'Not provided';
+    this.el['profile-created'].textContent = new Date(acct.createdAt).toLocaleDateString();
+  }
+
+  // Shows/hides the main-menu account bar and Profile/Logout/Sign-In buttons based on login
+  // state, and fills in the avatar/name/coins/level/stars line when logged in.
+  _updateAccountBar() {
+    const acct = this.auth.getActiveAccount();
+    this.el['account-bar'].classList.toggle('hidden', !acct);
+    this.el['btn-profile'].classList.toggle('hidden', !acct);
+    this.el['btn-menu-logout'].classList.toggle('hidden', !acct);
+    this.el['btn-sign-in'].classList.toggle('hidden', !!acct);
+    if (!acct) return;
+    this.el['account-avatar'].style.background = `hsl(${acct.avatarHue},65%,42%)`;
+    this.el['account-avatar'].textContent = (acct.name[0] || '?').toUpperCase();
+    this.el['account-welcome'].textContent = `Welcome, ${acct.name}`;
+    const totals = this.save.getTotals();
+    this.el['account-substats'].textContent = `${this.save.getCoins()} coins · Level ${this.save.getUnlockedLevel()} · ${totals.totalStars}★`;
   }
 
   _applySettingsToInputs() {
@@ -148,6 +286,7 @@ export class UIManager extends EventEmitter {
     this.el['setting-volume'].value = Math.round(s.volume * 100);
     this.el['setting-camera'].value = s.camera;
     this.el['setting-ghost-replay'].checked = s.ghostReplay;
+    this.el['setting-assist'].checked = s.assist;
     this.el['setting-sensitivity'].value = Math.round(s.sensitivity * 100);
     this.el['setting-shadows'].checked = s.shadows;
     this.el['best-score-label'].textContent = this.save.getOverallBestScore();
@@ -159,6 +298,8 @@ export class UIManager extends EventEmitter {
       if (el) el.classList.toggle('hidden', id !== name);
     }
     if (name === 'main-menu') this._refreshMainMenu();
+    if (name === 'auth') this.populateAuthScreen();
+    if (name === 'profile') this.populateProfile();
   }
 
   // Continue label + the Progress Overview panel both reflect save state that can change between
@@ -176,6 +317,7 @@ export class UIManager extends EventEmitter {
     const vehicle = VEHICLE_PRESETS.find((p) => p.id === this.save.getSelectedVehicle()) || VEHICLE_PRESETS[0];
     this.el['overview-vehicle'].textContent = vehicle.name;
     this.el['overview-coins'].textContent = this.save.getCoins();
+    this._updateAccountBar();
   }
 
   hideLoading() {
@@ -212,6 +354,12 @@ export class UIManager extends EventEmitter {
       const num = document.createElement('div');
       num.textContent = String(i);
       tile.appendChild(num);
+      const parkingType = getLevelConfig(i).parkingType;
+      const typeBadge = document.createElement('div');
+      typeBadge.className = 'type-badge';
+      typeBadge.title = PARKING_TYPE_LABELS[parkingType] || '';
+      typeBadge.textContent = PARKING_TYPE_GLYPHS[parkingType] || '';
+      tile.appendChild(typeBadge);
       if (completed) {
         const stars = document.createElement('div');
         stars.className = 'stars';
@@ -299,6 +447,7 @@ export class UIManager extends EventEmitter {
     const totals = this.save.getTotals();
     const vehicle = VEHICLE_PRESETS.find((p) => p.id === this.save.getSelectedVehicle()) || VEHICLE_PRESETS[0];
 
+    const favoriteVehicle = VEHICLE_PRESETS.find((p) => p.id === totals.favoriteVehicleId);
     const statCards = [
       ['Current Level', this.save.getLastPlayedLevel()],
       ['Highest Unlocked', this.save.getUnlockedLevel()],
@@ -306,10 +455,15 @@ export class UIManager extends EventEmitter {
       ['Total Stars', `${totals.totalStars} / ${totals.maxStars}`],
       ['Completion', `${totals.percentComplete}%`],
       ['Total Play Time', formatPlayTime(totals.playTimeSec)],
+      ['Total Distance', formatDistance(totals.distanceMeters)],
       ['Parks Completed', totals.completedParks],
+      ['Total Restarts', totals.restarts],
       ['Total Collisions', totals.collisions],
       ['Highest Score', this.save.getOverallBestScore()],
       ['Best Accuracy', totals.bestAccuracy > 0 ? `${Math.round(totals.bestAccuracy * 100)}%` : '—'],
+      ['Average Accuracy', totals.averageAccuracy > 0 ? `${Math.round(totals.averageAccuracy * 100)}%` : '—'],
+      ['Most Played Level', totals.favoriteLevelId ?? '—'],
+      ['Favorite Vehicle', favoriteVehicle ? favoriteVehicle.name : '—'],
       ['Coins', this.save.getCoins()],
       ['Coins Earned', totals.coinsEarned],
       ['Current Vehicle', vehicle.name],
@@ -341,6 +495,7 @@ export class UIManager extends EventEmitter {
           <span class="progress-row-stat"><label>Best Score</label>${completed ? stats.bestScore : '—'}</span>
           <span class="progress-row-stat"><label>Best Time</label>${stats.bestTimeSec != null ? formatClock(stats.bestTimeSec) : '—'}</span>
           <span class="progress-row-stat"><label>Accuracy</label>${stats.bestAccuracy != null ? Math.round(stats.bestAccuracy * 100) + '%' : '—'}</span>
+          <span class="progress-row-stat"><label>Rating</label>${stats.bestRatingValue != null ? ratingLabelForValue(stats.bestRatingValue) : '—'}</span>
           <span class="progress-row-stat"><label>Collisions</label>${stats.lowestCollisions != null ? stats.lowestCollisions : '—'}</span>`;
       }
       listEl.appendChild(row);
@@ -449,8 +604,9 @@ export class UIManager extends EventEmitter {
   }
 
   // Brief non-blocking banner shown when a level starts — fades out on its own via CSS animation.
-  showLevelIntro(levelNum) {
+  showLevelIntro(levelNum, parkingType) {
     this.el['level-intro-num'].textContent = levelNum;
+    this.el['level-intro-type'].textContent = PARKING_TYPE_LABELS[parkingType] || '';
     const banner = this.el['level-intro-banner'];
     banner.classList.remove('show');
     // Force reflow so re-triggering the animation works on consecutive same-level starts (retry).
@@ -489,7 +645,23 @@ export class UIManager extends EventEmitter {
       el.appendChild(row);
     }
     this.el['victory-total'].textContent = breakdown.total;
+    this.el['victory-rating'].textContent = breakdown.rating;
+    this.el['rating-fill'].style.width = `${Math.round(breakdown.ratingValue * 100)}%`;
+    this.el['rating-percent'].textContent = `${Math.round(breakdown.ratingValue * 100)}%`;
     this.showScreen('victory');
+  }
+
+  // Drives the two proximity bars (front/rear) of the optional parking-assist HUD widget.
+  // `distances` is `{ front, rear }` (meters, null = nothing in range) or null to hide entirely
+  // (assist disabled).
+  updateProximity(distances) {
+    this.el['assist-widget'].classList.toggle('hidden', !distances);
+    if (!distances) return;
+    const fillFor = (dist) => (dist == null ? 0 : Math.round((1 - Math.min(dist, 4.5) / 4.5) * 100));
+    this.el['assist-front-fill'].style.width = `${fillFor(distances.front)}%`;
+    this.el['assist-rear-fill'].style.width = `${fillFor(distances.rear)}%`;
+    this.el['assist-front-fill'].classList.toggle('near', distances.front != null && distances.front < 1.2);
+    this.el['assist-rear-fill'].classList.toggle('near', distances.rear != null && distances.rear < 1.2);
   }
 
   showGameOver(reason) {

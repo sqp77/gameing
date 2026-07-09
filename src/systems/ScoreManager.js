@@ -1,12 +1,12 @@
 /*
- * ParkMaster3D
- * Owner: Saud
+ * MASAR
+ * Owner: Saud Alqhtani
  * GitHub: sqp77
  * =============
  */
 
 import { EventEmitter } from '../utils/EventEmitter.js';
-import { starsForScore } from '../utils/scoring.js';
+import { starsForScore, computeParkingRating } from '../utils/scoring.js';
 
 const PENALTY_COLLISION = 40;
 const PENALTY_BOUNDARY = 25;
@@ -79,6 +79,7 @@ export class ScoreManager extends EventEmitter {
     // Small flat currency reward, independent of the score curve: a base payout plus bonuses for
     // the same three things the star rating already rewards (speed, accuracy, clean driving).
     const coins = COIN_BASE + (this.collisions === 0 ? COIN_BONUS : 0) + (accuracy >= 0.9 ? COIN_BONUS : 0) + (stars === 3 ? COIN_BONUS : 0);
+    const rating = computeParkingRating({ accuracy, collisions: this.collisions, elapsed: this.elapsed, timeLimit: this.timeLimit });
     return {
       base: BASE_SCORE,
       timeBonus,
@@ -88,6 +89,9 @@ export class ScoreManager extends EventEmitter {
       total,
       stars,
       coins,
+      accuracy,
+      rating: rating.label,
+      ratingValue: rating.value,
     };
   }
 }
