@@ -1,5 +1,8 @@
 # مسار | MASAR
 
+
+![Saudi-inspired 3D driving & parking simulator](/docs/img/1.png)
+
 A Saudi-inspired 3D driving & parking simulator built with Three.js — 20
 hand-crafted and procedurally varied levels, ghost replays, achievements,
 dynamic traffic, and a full arcade-style scoring system, set in parking
@@ -16,6 +19,8 @@ Saudi flags, and Gulf-inspired architecture).
 - Local accounts with per-profile save slots, plus manual save export/import
 - Bilingual Arabic/English signage and light Saudi environmental theming
 - Desktop (keyboard) and mobile (touch) controls
+
+![Saudi-inspired 3D driving & parking simulator](/docs/img/2.png)
 
 ## Getting Started
 
