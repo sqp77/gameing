@@ -17,6 +17,9 @@ export const STRINGS = {
   'common.cancel': { en: 'Cancel', ar: 'إلغاء' },
   'common.ownershipFooter': { en: 'Created by Saud Alqhtani | GitHub: sqp77', ar: 'من إعداد سعود القحطاني | GitHub: sqp77' },
   'common.coinsSuffix': { en: ' coins', ar: ' عملة' },
+  'common.createdByLabel': { en: 'Created by', ar: 'تم التطوير بواسطة' },
+  'common.githubLabel': { en: 'GitHub:', ar: 'GitHub:' },
+  'common.creatorShort': { en: 'Saud Alqhtani • sqp77', ar: 'Saud Alqhtani • sqp77' },
 
   // ---- Auth ----
   'auth.welcomeDefault': { en: 'Sign in to save your progress across sessions', ar: 'سجّل الدخول لحفظ تقدمك عبر الجلسات' },
@@ -57,6 +60,18 @@ export const STRINGS = {
   'menu.overviewCoins': { en: 'Coins: ', ar: 'العملات: ' },
   'menu.overviewVehicle': { en: 'Vehicle: ', ar: 'المركبة: ' },
   'menu.bestScorePrefix': { en: 'Best Score: ', ar: 'أفضل نتيجة: ' },
+  'menu.exit': { en: 'Exit', ar: 'خروج' },
+
+  // ---- Main menu: quick access panel ----
+  'menu.quickAccess.title': { en: 'Quick Access', ar: 'الوصول السريع' },
+  'menu.quickAccess.lastMode': { en: 'Last Played', ar: 'آخر وضع' },
+  'menu.quickAccess.currentCity': { en: 'Current City', ar: 'المدينة الحالية' },
+  'menu.quickAccess.latestAchievement': { en: 'Latest Achievement', ar: 'أحدث إنجاز' },
+  'menu.quickAccess.resumeHint': { en: 'Tap to resume', ar: 'اضغط للمتابعة' },
+  'menu.quickAccess.noneYet': { en: 'None yet', ar: 'لا يوجد بعد' },
+
+  // ---- Main menu: player progress card ----
+  'menu.progressCard.title': { en: 'Your Progress', ar: 'تقدمك' },
 
   // ---- Level select ----
   'levelSelect.title': { en: 'Select Level', ar: 'اختر المستوى' },
@@ -118,6 +133,13 @@ export const STRINGS = {
 
   // ---- Settings ----
   'settings.title': { en: 'Settings', ar: 'الإعدادات' },
+  'settings.search': { en: 'Search settings…', ar: 'ابحث في الإعدادات…' },
+  'settings.noResults': { en: 'No matching settings', ar: 'لا توجد إعدادات مطابقة' },
+  'settings.group.general': { en: 'General', ar: 'عام' },
+  'settings.group.graphics': { en: 'Graphics', ar: 'الرسومات' },
+  'settings.group.audio': { en: 'Audio', ar: 'الصوت' },
+  'settings.group.language': { en: 'Language', ar: 'اللغة' },
+  'settings.group.controls': { en: 'Controls', ar: 'التحكم' },
   'settings.volume': { en: 'Master Volume', ar: 'مستوى الصوت' },
   'settings.camera': { en: 'Camera', ar: 'الكاميرا' },
   'settings.cameraThird': { en: 'Third Person', ar: 'منظور الغائب' },
@@ -228,6 +250,7 @@ export const STRINGS = {
   'toast.licensePassed': { en: 'You passed! MASAR license earned.', ar: 'لقد نجحت! تم الحصول على رخصة مسار.' },
   'toast.licenseFailed': { en: 'Test failed — review the requirements and try again.', ar: 'فشل الاختبار — راجع المتطلبات وحاول مجددًا.' },
   'toast.eventCoinBonus': { en: 'Event bonus: +{0}% coins', ar: 'مكافأة المناسبة: +{0}% عملات' },
+  'toast.exitHint': { en: 'Close this browser tab to exit', ar: 'أغلق تبويب المتصفح للخروج' },
 
   // ---- Achievement popup ----
   'achievement.unlockedTitle': { en: 'Achievement Unlocked', ar: 'تم فتح إنجاز' },
