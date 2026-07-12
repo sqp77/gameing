@@ -6,14 +6,14 @@
  */
 
 // Pure data mapping a level's derived parking-type id (see levels.js's
-// `parkingType` field) to a display label and a short glyph for compact UI
-// (level-select tiles). Mirrors data/achievements.js's "data stays separate
+// `parkingType` field) to a display-label i18n key (see data/strings.js) and a short glyph
+// for compact UI (level-select tiles). Mirrors data/achievements.js's "data stays separate
 // from the logic that consumes it" convention.
 export const PARKING_TYPE_LABELS = {
-  parallel: 'Parallel Parking',
-  reverse: 'Reverse Parking',
-  perpendicular: 'Perpendicular Parking',
-  angled: 'Angled Parking',
+  parallel: 'parkingType.parallel',
+  reverse: 'parkingType.reverse',
+  perpendicular: 'parkingType.perpendicular',
+  angled: 'parkingType.angled',
 };
 
 export const PARKING_TYPE_GLYPHS = {

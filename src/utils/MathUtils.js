@@ -37,6 +37,26 @@ export function randomRange(min, max) {
   return min + Math.random() * (max - min);
 }
 
+// Two-point ping-pong walk: returns the position/heading for a cycle of period
+// `2 * |p1-p0| / speed`, offset by `phaseOffset` (seconds). Same math TrafficManager's
+// pedestrian/cart/cone agents already use inline — pulled out here so the hub's ambient
+// pedestrians (HubTrafficManager) can reuse it without duplicating the formula, while
+// TrafficManager itself is left untouched.
+export function pingPongWalk(elapsed, phaseOffset, p0, p1, speed) {
+  const length = Math.max(0.001, Math.hypot(p1.x - p0.x, p1.z - p0.z));
+  const cycleTime = (2 * length) / speed;
+  const t = (elapsed + phaseOffset) % cycleTime;
+  const half = cycleTime / 2;
+  const forward = t < half;
+  const legT = forward ? t / half : (cycleTime - t) / half;
+  const x = lerp(p0.x, p1.x, legT);
+  const z = lerp(p0.z, p1.z, legT);
+  const dx = p1.x - p0.x;
+  const dz = p1.z - p0.z;
+  const heading = forward ? Math.atan2(dz, dx) : Math.atan2(-dz, -dx);
+  return { x, z, heading };
+}
+
 // Seeded PRNG (mulberry32) for deterministic level generation
 export function makeSeededRandom(seed) {
   let a = seed >>> 0;

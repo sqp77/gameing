@@ -19,20 +19,21 @@ export function starsForScore(score) {
 
 // Rating tiers for the post-park accuracy rating (Feature: Parking Accuracy Rating).
 // Ordered highest-first; `ratingLabelForValue` returns the first tier whose `min` the
-// value clears.
+// value clears. `label` is an i18n key (see data/strings.js) — callers pass it through
+// I18n#t() at display time rather than showing it directly.
 const RATING_TIERS = [
-  { min: 0.97, label: 'Perfect' },
-  { min: 0.9, label: 'Excellent' },
-  { min: 0.75, label: 'Great' },
-  { min: 0.55, label: 'Good' },
-  { min: 0, label: 'Needs Improvement' },
+  { min: 0.97, label: 'rating.perfect' },
+  { min: 0.9, label: 'rating.excellent' },
+  { min: 0.75, label: 'rating.great' },
+  { min: 0.55, label: 'rating.good' },
+  { min: 0, label: 'rating.needsImprovement' },
 ];
 
 export function ratingLabelForValue(value) {
   for (const tier of RATING_TIERS) {
     if (value >= tier.min) return tier.label;
   }
-  return 'Needs Improvement';
+  return 'rating.needsImprovement';
 }
 
 // Composite parking rating: position/rotation accuracy is the primary factor (it already

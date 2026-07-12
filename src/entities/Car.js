@@ -7,12 +7,16 @@
 
 import * as THREE from 'three';
 
-// Named, unlockable vehicle presets. Dimensions are in meters and drive both
-// the visual model and the physics footprint (wheelbase/track/turn radius).
+// Named, unlockable vehicle presets. Dimensions are in meters and drive both the visual model
+// and the physics footprint (wheelbase/track/turn radius). `name` is an i18n key (see
+// data/strings.js) — UI code passes it through I18n#t() at display time. `pickup`/`ev` are the
+// two Saudi-inspired category additions (Pickup Truck, Modern EV — Family Sedan/Large SUV are
+// already covered by the existing `sedan`/`suv`); both are fictional names, unlockable only past
+// the existing campaign's top tier so they slot into progression without touching anything else.
 export const VEHICLE_PRESETS = [
   {
     id: 'hatchback',
-    name: 'City Hatchback',
+    name: 'vehicle.hatchback.name',
     unlockLevel: 1,
     cost: 0,
     color: 0x2ec4ff,
@@ -27,7 +31,7 @@ export const VEHICLE_PRESETS = [
   },
   {
     id: 'sedan',
-    name: 'Sport Sedan',
+    name: 'vehicle.sedan.name',
     unlockLevel: 6,
     cost: 200,
     color: 0xff5252,
@@ -42,7 +46,7 @@ export const VEHICLE_PRESETS = [
   },
   {
     id: 'suv',
-    name: 'Urban SUV',
+    name: 'vehicle.suv.name',
     unlockLevel: 11,
     cost: 400,
     color: 0xffc233,
@@ -57,7 +61,7 @@ export const VEHICLE_PRESETS = [
   },
   {
     id: 'coupe',
-    name: 'Speed Coupe',
+    name: 'vehicle.coupe.name',
     unlockLevel: 16,
     cost: 650,
     color: 0xb388ff,
@@ -69,6 +73,89 @@ export const VEHICLE_PRESETS = [
     maxSpeed: 38,
     accel: 13,
     handling: 1.3,
+  },
+  {
+    id: 'pickup',
+    name: 'vehicle.pickup.name',
+    unlockLevel: 20,
+    cost: 900,
+    color: 0xc9782e,
+    length: 5.2,
+    width: 2.0,
+    height: 1.75,
+    wheelbase: 3.1,
+    track: 1.7,
+    maxSpeed: 27,
+    accel: 7.5,
+    handling: 0.8,
+    bodyStyle: 'pickup',
+  },
+  {
+    id: 'ev',
+    name: 'vehicle.ev.name',
+    unlockLevel: 20,
+    cost: 1200,
+    color: 0x2effc4,
+    length: 4.5,
+    width: 1.9,
+    height: 1.25,
+    wheelbase: 2.75,
+    track: 1.62,
+    maxSpeed: 34,
+    accel: 14,
+    handling: 1.1,
+  },
+  // v1.1.0 Expanded License Program (Feature 6): 3 new vehicles gated by License Test tier
+  // instead of campaign level — `unlockLevel: Infinity` keeps them out of the campaign-progress
+  // unlock check entirely; GameManager#_checkVehicleUnlocks additionally checks
+  // `unlockLicenseTier` against SaveManager#isLicenseTierEarned.
+  {
+    id: 'taxi',
+    name: 'vehicle.taxi.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'intermediate',
+    cost: 500,
+    color: 0xffd23f,
+    length: 4.6,
+    width: 1.85,
+    height: 1.3,
+    wheelbase: 2.8,
+    track: 1.6,
+    maxSpeed: 30,
+    accel: 10,
+    handling: 1.05,
+  },
+  {
+    id: 'van',
+    name: 'vehicle.van.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'advanced',
+    cost: 800,
+    color: 0xe8e8e8,
+    length: 5.0,
+    width: 2.0,
+    height: 1.9,
+    wheelbase: 3.0,
+    track: 1.68,
+    maxSpeed: 26,
+    accel: 7,
+    handling: 0.8,
+  },
+  {
+    id: 'sportscar',
+    name: 'vehicle.sportscar.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'professional',
+    cost: 1500,
+    color: 0xff2d2d,
+    length: 4.2,
+    width: 1.95,
+    height: 1.05,
+    wheelbase: 2.6,
+    track: 1.65,
+    maxSpeed: 42,
+    accel: 16,
+    handling: 1.4,
   },
 ];
 
@@ -148,6 +235,19 @@ export function createCarModel(preset) {
   const glassBand = new THREE.Mesh(glassGeo, glassMat);
   glassBand.position.set(-L * 0.03, rideHeight + lowerH + cabinH * 0.62, 0);
   group.add(glassBand);
+
+  // Flat open cargo bed for the pickup body style: one extra low box behind the cabin, reusing
+  // the same box-primitive technique as the bumpers/roof above rather than a new geometry system.
+  if (preset.bodyStyle === 'pickup') {
+    const bedL = L * 0.32;
+    const bedH = lowerH * 0.7;
+    const bedGeo = new THREE.BoxGeometry(bedL, bedH, W * 0.98);
+    const bed = new THREE.Mesh(bedGeo, darkMat);
+    bed.position.set(-(L / 2 - bedL / 2 - L * 0.03), rideHeight + lowerH + bedH / 2, 0);
+    bed.castShadow = true;
+    bed.receiveShadow = true;
+    group.add(bed);
+  }
 
   // ----- Headlights -----
   const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffee, emissiveIntensity: 1.4 });

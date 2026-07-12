@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <meta name="author" content="Saud Alqhtani (GitHub: sqp77)" />
-    <title>MASAR | مسار — by Saud Alqhtani (sqp77)</title>
+    <title>MASAR — Smart Driving &amp; Parking Simulator</title>
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body>
@@ -15,243 +18,540 @@
       <section id="screen-auth" class="screen">
         <div class="menu-panel auth-panel">
           <div class="auth-logo">
-            <h1 class="game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></h1>
+            <h1 class="game-title">
+              <span class="title-ar">مسار</span><span class="title-sep">|</span
+              ><span class="title-en">MASAR</span>
+            </h1>
             <p class="game-subtitle">
               <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
-              <span class="subtitle-en">Smart Driving &amp; Parking Simulator</span>
+              <span class="subtitle-en"
+                >Smart Driving &amp; Parking Simulator</span
+              >
             </p>
           </div>
-          <p class="auth-welcome" id="auth-welcome">Sign in to save your progress across sessions</p>
+          <p class="auth-welcome" id="auth-welcome" data-i18n="auth.welcomeDefault">
+            Sign in to save your progress across sessions
+          </p>
 
           <div id="auth-account-list" class="auth-account-list hidden"></div>
 
           <div id="auth-provider-list" class="auth-provider-list">
-            <button class="btn auth-provider-btn provider-apple" data-provider="apple">
-              <span class="auth-provider-icon">A</span>Sign in with Apple
+            <button
+              class="btn auth-provider-btn provider-apple"
+              data-provider="apple"
+            >
+              <span class="auth-provider-icon">A</span
+              ><span data-i18n="auth.signInApple">Sign in with Apple</span>
             </button>
-            <button class="btn auth-provider-btn provider-google" data-provider="google">
-              <span class="auth-provider-icon">G</span>Sign in with Google
+            <button
+              class="btn auth-provider-btn provider-google"
+              data-provider="google"
+            >
+              <span class="auth-provider-icon">G</span
+              ><span data-i18n="auth.signInGoogle">Sign in with Google</span>
             </button>
-            <button class="btn auth-provider-btn provider-facebook" data-provider="facebook">
-              <span class="auth-provider-icon">f</span>Sign in with Facebook
+            <button
+              class="btn auth-provider-btn provider-facebook"
+              data-provider="facebook"
+            >
+              <span class="auth-provider-icon">f</span
+              ><span data-i18n="auth.signInFacebook">Sign in with Facebook</span>
             </button>
-            <button class="btn auth-provider-btn provider-xbox" data-provider="xbox">
-              <span class="auth-provider-icon">X</span>Sign in with Xbox
+            <button
+              class="btn auth-provider-btn provider-xbox"
+              data-provider="xbox"
+            >
+              <span class="auth-provider-icon">X</span
+              ><span data-i18n="auth.signInXbox">Sign in with Xbox</span>
             </button>
           </div>
 
           <div id="auth-form" class="auth-form hidden">
             <div class="settings-row auth-form-row">
-              <label>Display Name</label>
-              <input type="text" id="auth-name" maxlength="24" placeholder="Your name" />
+              <label data-i18n="auth.displayName">Display Name</label>
+              <input
+                type="text"
+                id="auth-name"
+                maxlength="24"
+                placeholder="Your name"
+                data-i18n-placeholder="auth.namePlaceholder"
+              />
             </div>
             <div class="settings-row auth-form-row">
-              <label>Email (optional)</label>
-              <input type="email" id="auth-email" placeholder="you@example.com" />
+              <label data-i18n="auth.email">Email (optional)</label>
+              <input
+                type="email"
+                id="auth-email"
+                placeholder="you@example.com"
+                data-i18n-placeholder="auth.emailPlaceholder"
+              />
             </div>
             <div class="menu-buttons">
-              <button id="auth-confirm" class="btn btn-primary">Continue</button>
-              <button id="auth-cancel" class="btn btn-back">Cancel</button>
+              <button id="auth-confirm" class="btn btn-primary" data-i18n="auth.continue">
+                Continue
+              </button>
+              <button id="auth-cancel" class="btn btn-back" data-i18n="common.cancel">Cancel</button>
             </div>
           </div>
 
-          <button id="btn-auth-skip" class="btn-link auth-skip">Continue as Guest</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button id="btn-auth-skip" class="btn-link auth-skip" data-i18n="auth.continueGuest">
+            Continue as Guest
+          </button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== MAIN MENU ===================== -->
       <section id="screen-main-menu" class="screen">
-        <div class="menu-panel">
-          <h1 class="game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></h1>
+        <div class="menu-panel wide">
+          <div class="menu-header">
+            <h1 class="game-title">
+              <span class="title-ar">مسار</span><span class="title-sep">|</span
+              ><span class="title-en">MASAR</span>
+            </h1>
+            <span class="menu-version-chip" data-i18n="common.version">v1.1.0</span>
+          </div>
           <p class="game-subtitle">
             <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
-            <span class="subtitle-en">Smart Driving &amp; Parking Simulator</span>
+            <span class="subtitle-en"
+              >Smart Driving &amp; Parking Simulator</span
+            >
           </p>
 
-          <div id="account-bar" class="account-bar hidden">
-            <div class="account-avatar" id="account-avatar"></div>
-            <div class="account-info">
-              <div class="account-welcome" id="account-welcome">Welcome, Driver</div>
-              <div class="account-substats" id="account-substats">0 coins · Level 1 · 0★</div>
+          <div class="menu-creator-credit">
+            <span class="creator-label" data-i18n="common.createdByLabel">Created by</span>
+            <span class="creator-name">Saud Alqhtani</span>
+            <span class="creator-github" dir="ltr">
+              <span data-i18n="common.githubLabel">GitHub:</span>
+              <a href="https://github.com/sqp77" target="_blank" rel="noopener noreferrer">sqp77</a>
+            </span>
+          </div>
+
+          <div class="menu-profile-row">
+            <div id="account-bar" class="account-bar hidden">
+              <div class="account-avatar" id="account-avatar"></div>
+              <div class="account-info">
+                <div class="account-welcome" id="account-welcome" data-i18n="account.defaultWelcome">
+                  Welcome, Driver
+                </div>
+                <div class="account-substats" id="account-substats">
+                  0 coins · Level 1 · 0★
+                </div>
+              </div>
+            </div>
+            <div id="menu-rank-badge" class="menu-rank-badge">Beginner Driver</div>
+          </div>
+
+          <div class="menu-buttons-grid">
+            <button id="btn-play" class="btn btn-primary btn-grid">
+              <span class="btn-icon" aria-hidden="true">▶</span><span class="btn-label" data-i18n="menu.play">Continue</span>
+            </button>
+            <button id="btn-enter-hub" class="btn btn-primary btn-grid">
+              <span class="btn-icon" aria-hidden="true">🗺</span><span class="btn-label" data-i18n="menu.openWorld">Free Drive</span>
+            </button>
+            <button id="btn-academy" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🎓</span><span class="btn-label" data-i18n="menu.academy">Driving Academy</span>
+            </button>
+            <button id="btn-license-test" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🪪</span><span class="btn-label" data-i18n="menu.licenseTest">License Test</span>
+            </button>
+            <button id="btn-shop" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🚗</span><span class="btn-label" data-i18n="menu.shop">Vehicles</span>
+            </button>
+            <button id="btn-achievements" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🏆</span><span class="btn-label" data-i18n="menu.achievements">Achievements</span>
+            </button>
+            <button id="btn-progress" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">📊</span><span class="btn-label" data-i18n="menu.progress">Statistics</span>
+            </button>
+            <button id="btn-settings" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">⚙</span><span class="btn-label" data-i18n="menu.settings">Settings</span>
+            </button>
+            <button id="btn-credits" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">❓</span><span class="btn-label" data-i18n="menu.credits">About</span>
+            </button>
+            <button id="btn-exit" class="btn btn-grid btn-back">
+              <span class="btn-icon" aria-hidden="true">🚪</span><span class="btn-label" data-i18n="menu.exit">Exit</span>
+            </button>
+          </div>
+
+          <div class="menu-secondary-row">
+            <button id="btn-level-select" class="btn btn-pill" data-i18n="menu.levelSelect">Level Select</button>
+            <button id="btn-daily" class="btn btn-pill" data-i18n="menu.daily">Daily Challenges</button>
+          </div>
+
+          <button id="btn-quick-resume" class="quick-access-card" type="button">
+            <div class="quick-access-title" data-i18n="menu.quickAccess.title">Quick Access</div>
+            <div class="quick-access-grid">
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.lastMode">Last Played</label><span id="qa-last-mode">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.currentCity">Current City</label><span id="qa-city">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="progress.stat.currentVehicle">Current Vehicle</label><span id="qa-vehicle">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.latestAchievement">Latest Achievement</label><span id="qa-achievement">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="progress.stat.driverRank">Driver Rank</label><span id="qa-rank">—</span>
+              </div>
+            </div>
+            <div class="quick-access-hint" data-i18n="menu.quickAccess.resumeHint">Tap to resume</div>
+          </button>
+
+          <div class="progress-card">
+            <div class="progress-card-title" data-i18n="menu.progressCard.title">Your Progress</div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.levelsCompleted">Levels Completed</label>
+              <div class="overview-bar"><div id="pc-levels-fill" class="overview-fill"></div></div>
+              <span id="pc-levels-value">0 / 20</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="academy.title">MASAR Driving Academy</label>
+              <div class="overview-bar"><div id="pc-academy-fill" class="overview-fill"></div></div>
+              <span id="pc-academy-value">0%</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.licensesEarned">Licenses Earned</label>
+              <div class="overview-bar"><div id="pc-license-fill" class="overview-fill"></div></div>
+              <span id="pc-license-value">0 / 4</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.reputation">Reputation</label>
+              <div class="overview-bar"><div id="pc-reputation-fill" class="overview-fill"></div></div>
+              <span id="pc-reputation-value">0</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.vehiclesOwned">Vehicles Owned</label>
+              <div class="overview-bar"><div id="pc-vehicles-fill" class="overview-fill"></div></div>
+              <span id="pc-vehicles-value">0 / 9</span>
+            </div>
+            <div class="progress-card-coins">
+              <span data-i18n="progress.stat.coins">Coins</span>: <strong id="pc-coins">0</strong>
             </div>
           </div>
 
-          <div class="menu-buttons">
-            <button id="btn-play" class="btn btn-primary">Play</button>
-            <button id="btn-level-select" class="btn">Level Select</button>
-            <button id="btn-progress" class="btn">Progress</button>
-            <button id="btn-shop" class="btn">Shop</button>
-            <button id="btn-daily" class="btn">Daily Challenges</button>
-            <button id="btn-achievements" class="btn">Achievements</button>
-            <button id="btn-settings" class="btn">Settings</button>
-            <button id="btn-credits" class="btn">Credits</button>
-          </div>
           <div class="account-actions">
-            <button id="btn-sign-in" class="btn hidden">Sign In</button>
-            <button id="btn-profile" class="btn hidden">Profile</button>
-            <button id="btn-menu-logout" class="btn btn-back hidden">Logout</button>
+            <button id="btn-sign-in" class="btn hidden" data-i18n="menu.signIn">Sign In</button>
+            <button id="btn-profile" class="btn hidden" data-i18n="menu.profile">Profile</button>
+            <button id="btn-menu-logout" class="btn btn-back hidden" data-i18n="menu.logout">
+              Logout
+            </button>
           </div>
-          <div id="menu-overview" class="menu-overview">
-            <div class="overview-bar"><div id="overview-fill" class="overview-fill"></div></div>
-            <div class="overview-stats">
-              <span>Complete: <strong id="overview-percent">0%</strong></span>
-              <span>Stars: <strong id="overview-stars">0 / 60</strong></span>
-              <span>Coins: <strong id="overview-coins">0</strong></span>
-              <span>Vehicle: <strong id="overview-vehicle">City Hatchback</strong></span>
-            </div>
+          <div class="menu-footer">
+            <span data-i18n="menu.bestScorePrefix">Best Score: </span><span id="best-score-label">0</span>
           </div>
-          <div class="menu-footer">Best Score: <span id="best-score-label">0</span></div>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== LEVEL SELECT ===================== -->
       <section id="screen-level-select" class="screen hidden">
         <div class="menu-panel wide">
-          <h2>Select Level</h2>
+          <h2 data-i18n="levelSelect.title">Select Level</h2>
           <div id="level-grid" class="level-grid"></div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== DRIVING ACADEMY ===================== -->
+      <section id="screen-academy" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2 data-i18n="academy.title">MASAR Driving Academy</h2>
+          <p class="screen-subtitle" data-i18n="academy.subtitle">Master every parking technique, stage by stage</p>
+          <div id="academy-grid" class="achievements-grid"></div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ACADEMY CERTIFICATE ===================== -->
+      <section id="screen-academy-certificate" class="screen hidden overlay">
+        <div class="menu-panel">
+          <div id="academy-certificate-canvas-wrap" class="certificate-canvas-wrap"></div>
+          <div class="menu-buttons">
+            <button id="btn-save-academy-certificate" class="btn" data-i18n="academy.saveCertificate">Save Certificate</button>
+            <button id="btn-academy-certificate-back" class="btn btn-back" data-i18n="common.back">Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== DRIVING LICENSE TEST ===================== -->
+      <section id="screen-license-select" class="screen hidden">
+        <div class="menu-panel wide">
+          <h2 data-i18n="license.title">Driving Test</h2>
+          <p class="screen-subtitle" data-i18n="license.subtitle">Complete a full route to earn your MASAR Digital Driving License</p>
+          <div id="license-grid" class="achievements-grid"></div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== LICENSE TEST RESULT ===================== -->
+      <section id="screen-license-result" class="screen hidden overlay">
+        <div class="menu-panel">
+          <h2 id="license-result-title">Test Passed</h2>
+          <div id="license-result-stats" class="progress-stats"></div>
+          <div id="license-certificate-canvas-wrap" class="certificate-canvas-wrap hidden"></div>
+          <div class="menu-buttons">
+            <button id="btn-save-license-certificate" class="btn hidden" data-i18n="academy.saveCertificate">Save Certificate</button>
+            <button id="btn-license-retry" class="btn btn-primary" data-i18n="victory.retry">Retry</button>
+            <button id="btn-license-menu" class="btn btn-back" data-i18n="common.menu">Menu</button>
+          </div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== ACHIEVEMENTS ===================== -->
       <section id="screen-achievements" class="screen hidden">
         <div class="menu-panel wide">
-          <h2>Achievements</h2>
-          <div class="achievements-summary" id="achievements-summary">0 / 0 Unlocked</div>
+          <h2 data-i18n="achievements.title">Achievements</h2>
+          <div class="achievements-summary" id="achievements-summary">
+            0 / 0 Unlocked
+          </div>
           <div id="achievements-grid" class="achievements-grid"></div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== PROGRESS ===================== -->
       <section id="screen-progress" class="screen hidden">
         <div class="menu-panel wide">
-          <h2>Player Progress</h2>
+          <h2 data-i18n="progress.title">Player Progress</h2>
           <div id="progress-stats" class="progress-stats"></div>
-          <h3 class="progress-subhead">Level Records</h3>
+          <h3 class="progress-subhead" data-i18n="progress.levelRecords">Level Records</h3>
           <div id="progress-level-list" class="progress-level-list"></div>
-          <h3 class="progress-subhead">Recent Achievements</h3>
-          <div id="progress-achievements" class="achievements-grid progress-achievements"></div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <h3 class="progress-subhead" data-i18n="progress.recentAchievements">Recent Achievements</h3>
+          <div
+            id="progress-achievements"
+            class="achievements-grid progress-achievements"
+          ></div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== SHOP ===================== -->
       <section id="screen-shop" class="screen hidden">
         <div class="menu-panel wide">
-          <h2>Vehicle Shop</h2>
-          <div class="achievements-summary">Coins: <span id="shop-coins">0</span></div>
+          <h2 data-i18n="shop.title">Vehicle Shop</h2>
+          <div class="achievements-summary">
+            <span data-i18n="shop.coinsPrefix">Coins: </span><span id="shop-coins">0</span>
+          </div>
           <div id="shop-grid" class="achievements-grid"></div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== DAILY CHALLENGES ===================== -->
       <section id="screen-daily" class="screen hidden">
         <div class="menu-panel wide">
-          <h2>Daily Challenges</h2>
+          <h2 data-i18n="daily.title">Daily Challenges</h2>
           <div id="daily-grid" class="achievements-grid"></div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== SETTINGS ===================== -->
       <section id="screen-settings" class="screen hidden">
-        <div class="menu-panel">
-          <h2>Settings</h2>
-          <div class="settings-row">
-            <label>Master Volume</label>
-            <input type="range" id="setting-volume" min="0" max="100" value="70" />
-          </div>
-          <div class="settings-row">
-            <label>Camera</label>
-            <select id="setting-camera">
-              <option value="third">Third Person</option>
-              <option value="first">First Person</option>
-              <option value="top">Top Down</option>
-              <option value="reverse">Reverse Camera</option>
-            </select>
-          </div>
-          <div class="settings-row">
-            <label>Steering Sensitivity</label>
-            <input type="range" id="setting-sensitivity" min="50" max="150" value="100" />
-          </div>
-          <div class="settings-row">
-            <label>Shadows</label>
-            <input type="checkbox" id="setting-shadows" checked />
-          </div>
-          <div class="settings-row">
-            <label>Ghost Replay</label>
-            <input type="checkbox" id="setting-ghost-replay" checked />
-          </div>
-          <div class="settings-row">
-            <label>Parking Assist</label>
-            <input type="checkbox" id="setting-assist" checked />
-          </div>
-          <div class="settings-row">
-            <label>Save Data</label>
-            <div class="save-io-buttons">
-              <button id="btn-export-save" class="btn card-btn">Export</button>
-              <button id="btn-import-save" class="btn card-btn">Import</button>
-              <input type="file" id="input-import-save" accept="application/json" class="hidden" />
+        <div class="menu-panel wide">
+          <h2 data-i18n="settings.title">Settings</h2>
+          <input
+            type="search"
+            id="setting-search"
+            class="settings-search"
+            data-i18n-placeholder="settings.search"
+            placeholder="Search settings…"
+          />
+
+          <div class="settings-group" data-group="general">
+            <div class="settings-group-title" data-i18n="settings.group.general">General</div>
+            <div class="settings-row" data-label="settings.ghostReplay">
+              <label data-i18n="settings.ghostReplay">Ghost Replay</label>
+              <input type="checkbox" id="setting-ghost-replay" checked />
+            </div>
+            <div class="settings-row" data-label="settings.events">
+              <label data-i18n="settings.events">National Events</label>
+              <input type="checkbox" id="setting-events" checked />
+            </div>
+            <div class="settings-row" data-label="settings.saveData">
+              <label data-i18n="settings.saveData">Save Data</label>
+              <div class="save-io-buttons">
+                <button id="btn-export-save" class="btn card-btn" data-i18n="settings.export">Export</button>
+                <button id="btn-import-save" class="btn card-btn" data-i18n="settings.import">Import</button>
+                <input
+                  type="file"
+                  id="input-import-save"
+                  accept="application/json"
+                  class="hidden"
+                />
+              </div>
             </div>
           </div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+
+          <div class="settings-group" data-group="graphics">
+            <div class="settings-group-title" data-i18n="settings.group.graphics">Graphics</div>
+            <div class="settings-row" data-label="settings.shadows">
+              <label data-i18n="settings.shadows">Shadows</label>
+              <input type="checkbox" id="setting-shadows" checked />
+            </div>
+            <div class="settings-row" data-label="settings.camera">
+              <label data-i18n="settings.camera">Camera</label>
+              <select id="setting-camera">
+                <option value="third" data-i18n="settings.cameraThird">Third Person</option>
+                <option value="first" data-i18n="settings.cameraFirst">First Person</option>
+                <option value="top" data-i18n="settings.cameraTop">Top Down</option>
+                <option value="reverse" data-i18n="settings.cameraReverse">Reverse Camera</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="audio">
+            <div class="settings-group-title" data-i18n="settings.group.audio">Audio</div>
+            <div class="settings-row" data-label="settings.volume">
+              <label data-i18n="settings.volume">Master Volume</label>
+              <input type="range" id="setting-volume" min="0" max="100" value="70" />
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="language">
+            <div class="settings-group-title" data-i18n="settings.group.language">Language</div>
+            <div class="settings-row" data-label="settings.language">
+              <label data-i18n="settings.language">Language</label>
+              <select id="setting-language">
+                <option value="en" data-i18n="settings.langEnglish">English</option>
+                <option value="ar" data-i18n="settings.langArabic">Arabic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="controls">
+            <div class="settings-group-title" data-i18n="settings.group.controls">Controls</div>
+            <div class="settings-row" data-label="settings.sensitivity">
+              <label data-i18n="settings.sensitivity">Steering Sensitivity</label>
+              <input type="range" id="setting-sensitivity" min="50" max="150" value="100" />
+            </div>
+            <div class="settings-row" data-label="settings.assist">
+              <label data-i18n="settings.assist">Parking Assist</label>
+              <input type="checkbox" id="setting-assist" checked />
+            </div>
+          </div>
+
+          <div id="settings-empty" class="settings-empty hidden" data-i18n="settings.noResults">No matching settings</div>
+
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== PROFILE ===================== -->
       <section id="screen-profile" class="screen hidden">
         <div class="menu-panel">
-          <h2>Profile</h2>
+          <h2 data-i18n="profile.title">Profile</h2>
           <div class="profile-header">
             <div class="profile-avatar" id="profile-avatar"></div>
             <div class="profile-name" id="profile-name">Driver</div>
-            <div class="profile-provider-badge" id="profile-provider">Google</div>
+            <div class="profile-provider-badge" id="profile-provider">
+              Google
+            </div>
+            <div class="profile-license-badge" id="profile-license-badge">—</div>
           </div>
           <div class="profile-details">
-            <div class="profile-row"><label>Email</label><span id="profile-email">—</span></div>
-            <div class="profile-row"><label>Member Since</label><span id="profile-created">—</span></div>
+            <div class="profile-row">
+              <label data-i18n="profile.email">Email</label><span id="profile-email">—</span>
+            </div>
+            <div class="profile-row">
+              <label data-i18n="profile.memberSince">Member Since</label><span id="profile-created">—</span>
+            </div>
           </div>
           <div class="menu-buttons">
-            <button id="btn-switch-account" class="btn">Switch Account</button>
-            <button id="btn-logout" class="btn btn-back">Logout</button>
+            <button id="btn-switch-account" class="btn" data-i18n="profile.switchAccount">Switch Account</button>
+            <button id="btn-logout" class="btn btn-back" data-i18n="profile.logout">Logout</button>
           </div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== CREDITS ===================== -->
       <section id="screen-credits" class="screen hidden">
         <div class="menu-panel">
-          <h2>Credits</h2>
+          <h2 data-i18n="credits.title">Credits</h2>
           <div class="credits-content">
-            <div class="credits-game-title"><span class="title-ar">مسار</span><span class="title-sep">|</span><span class="title-en">MASAR</span></div>
-            <p class="credits-tagline">Smart Driving &amp; Parking Simulator — محاكي القيادة والاصطفاف الذكي</p>
-            <p class="credits-line">Created by <strong>Saud Alqhtani</strong></p>
-            <p class="credits-line">GitHub: <a href="https://github.com/sqp77" target="_blank" rel="noopener noreferrer">sqp77</a></p>
+            <div class="credits-game-title">
+              <span class="title-ar">مسار</span><span class="title-sep">|</span
+              ><span class="title-en">MASAR</span>
+            </div>
+            <p class="credits-tagline">
+              Smart Driving &amp; Parking Simulator — محاكي القيادة والاصطفاف
+              الذكي
+            </p>
+            <div class="credits-version-chip" data-i18n="common.version">v1.1.0</div>
+            <p class="credits-line credits-created-by" data-i18n="common.createdByLabel">Created by</p>
+            <p class="credits-line credits-creator-name"><strong>Saud Alqhtani</strong></p>
+            <p class="credits-line credits-github-label" data-i18n="common.githubLabel" dir="ltr">GitHub:</p>
+            <p class="credits-line credits-github-handle" dir="ltr">
+              <a
+                href="https://github.com/sqp77"
+                target="_blank"
+                rel="noopener noreferrer"
+                >sqp77</a
+              >
+            </p>
           </div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
         </div>
       </section>
 
       <!-- ===================== HUD (GAMEPLAY) ===================== -->
       <section id="screen-hud" class="screen hidden hud">
         <div class="hud-top">
-          <div class="hud-chip">Level <span id="hud-level">1</span></div>
-          <div class="hud-chip hud-objective" id="hud-objective">Park in the marked spot</div>
-          <div class="hud-chip">Score <span id="hud-score">0</span></div>
+          <div class="hud-chip"><span data-i18n="hud.level">Level</span> <span id="hud-level">1</span></div>
+          <div class="hud-chip hud-objective" id="hud-objective">
+            Park in the marked spot
+          </div>
+          <div id="hud-rank-badge" class="hud-chip hud-rank-badge hidden">Beginner Driver</div>
+          <div class="hud-chip"><span data-i18n="hud.score">Score</span> <span id="hud-score">0</span></div>
           <div class="hud-chip" id="hud-timer">02:00</div>
-          <button id="btn-hud-restart" class="btn btn-icon" title="Restart Level (R)">⟲</button>
+          <button
+            id="btn-hud-restart"
+            class="btn btn-icon"
+            title="Restart Level (R)"
+            data-i18n-title="hud.restartTitle"
+          >
+            ⟲
+          </button>
           <button id="btn-pause" class="btn btn-icon">II</button>
         </div>
 
@@ -263,8 +563,12 @@
             </div>
             <div class="gear-indicator" id="hud-gear">D</div>
           </div>
-          <button id="btn-camera-toggle" class="btn btn-icon cam-toggle">CAM</button>
-          <button id="btn-handbrake" class="btn btn-icon handbrake-btn">HB</button>
+          <button id="btn-camera-toggle" class="btn btn-icon cam-toggle">
+            CAM
+          </button>
+          <button id="btn-handbrake" class="btn btn-icon handbrake-btn">
+            HB
+          </button>
         </div>
 
         <div id="mobile-controls" class="mobile-controls hidden">
@@ -277,8 +581,10 @@
         </div>
 
         <div id="parking-progress" class="parking-progress hidden">
-          <div class="parking-progress-bar"><div id="parking-progress-fill" class="parking-progress-fill"></div></div>
-          <span>Hold position to complete parking...</span>
+          <div class="parking-progress-bar">
+            <div id="parking-progress-fill" class="parking-progress-fill"></div>
+          </div>
+          <span data-i18n="hud.holdPosition">Hold position to complete parking...</span>
         </div>
 
         <div id="radar-widget" class="radar-widget hidden">
@@ -288,100 +594,149 @@
         <div id="assist-widget" class="assist-widget hidden">
           <div class="assist-row">
             <span class="assist-label">FRONT</span>
-            <div class="assist-bar"><div id="assist-front-fill" class="assist-fill"></div></div>
+            <div class="assist-bar">
+              <div id="assist-front-fill" class="assist-fill"></div>
+            </div>
           </div>
           <div class="assist-row">
             <span class="assist-label">REAR</span>
-            <div class="assist-bar"><div id="assist-rear-fill" class="assist-fill"></div></div>
+            <div class="assist-bar">
+              <div id="assist-rear-fill" class="assist-fill"></div>
+            </div>
           </div>
         </div>
 
         <div id="toast-container" class="toast-container"></div>
 
+        <div id="hub-job-offer" class="hub-job-offer hidden">
+          <div class="hub-job-offer-title" id="hub-job-offer-title">Delivery Mission</div>
+          <div class="hub-job-offer-desc" id="hub-job-offer-desc"></div>
+          <div class="hub-job-offer-reward" id="hub-job-offer-reward"></div>
+          <div class="menu-buttons hub-job-offer-buttons">
+            <button id="btn-job-accept" class="btn btn-primary" data-i18n="jobs.accept">Accept</button>
+            <button id="btn-job-decline" class="btn btn-back" data-i18n="jobs.decline">Decline</button>
+          </div>
+        </div>
+
         <div id="level-intro-banner" class="level-intro-banner">
-          <div class="level-intro-number">Level <span id="level-intro-num">1</span></div>
+          <div class="level-intro-number">
+            <span data-i18n="hud.level">Level</span> <span id="level-intro-num">1</span>
+          </div>
           <div class="level-intro-type" id="level-intro-type"></div>
-          <div class="level-intro-credit">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="level-intro-credit" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== PAUSE ===================== -->
       <section id="screen-pause" class="screen hidden overlay">
         <div class="menu-panel">
-          <h2>Paused</h2>
+          <h2 data-i18n="pause.title">Paused</h2>
           <div class="menu-buttons">
-            <button id="btn-resume" class="btn btn-primary">Resume</button>
-            <button id="btn-restart" class="btn">Restart Level</button>
-            <button id="btn-pause-settings" class="btn">Settings</button>
-            <button id="btn-quit" class="btn btn-back">Quit to Menu</button>
+            <button id="btn-resume" class="btn btn-primary" data-i18n="pause.resume">Resume</button>
+            <button id="btn-restart" class="btn" data-i18n="pause.restart">Restart Level</button>
+            <button id="btn-pause-settings" class="btn" data-i18n="menu.settings">Settings</button>
+            <button id="btn-quit" class="btn btn-back" data-i18n="pause.quit">Quit to Menu</button>
           </div>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== RESTART CONFIRM ===================== -->
       <section id="screen-restart-confirm" class="screen hidden overlay">
         <div class="menu-panel">
-          <h2>Restart Level?</h2>
-          <p class="confirm-copy">Your current timer, score, and collisions for this attempt will be reset.</p>
+          <h2 data-i18n="restartConfirm.title">Restart Level?</h2>
+          <p class="confirm-copy" data-i18n="restartConfirm.body">
+            Your current timer, score, and collisions for this attempt will be
+            reset.
+          </p>
           <div class="menu-buttons">
-            <button id="btn-restart-confirm" class="btn btn-primary">Restart Level</button>
-            <button id="btn-restart-cancel" class="btn btn-back">Cancel</button>
+            <button id="btn-restart-confirm" class="btn btn-primary" data-i18n="pause.restart">
+              Restart Level
+            </button>
+            <button id="btn-restart-cancel" class="btn btn-back" data-i18n="common.cancel">Cancel</button>
           </div>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== REPLAY (WATCH BEST RUN) ===================== -->
       <section id="screen-replay" class="screen hidden hud">
         <div class="replay-bar">
-          <span id="replay-label">Watching Best Run</span>
-          <button id="btn-stop-replay" class="btn btn-icon">Stop</button>
+          <span id="replay-label" data-i18n="replay.watchingBestRun">Watching Best Run</span>
+          <button id="btn-stop-replay" class="btn btn-icon" data-i18n="replay.stop">Stop</button>
         </div>
       </section>
 
       <!-- ===================== VICTORY ===================== -->
       <section id="screen-victory" class="screen hidden overlay">
         <div class="menu-panel">
-          <h2 class="victory-title">Parked!</h2>
+          <h2 class="victory-title" data-i18n="victory.title">Parked!</h2>
           <div class="rating-block">
             <div class="rating-badge" id="victory-rating">Great</div>
-            <div class="rating-bar"><div id="rating-fill" class="rating-fill"></div></div>
+            <div class="rating-bar">
+              <div id="rating-fill" class="rating-fill"></div>
+            </div>
             <div class="rating-percent" id="rating-percent">0%</div>
           </div>
           <div class="score-breakdown" id="score-breakdown"></div>
-          <div class="total-score">Total: <span id="victory-total">0</span></div>
-          <div class="menu-buttons">
-            <button id="btn-next-level" class="btn btn-primary">Next Level</button>
-            <button id="btn-watch-replay" class="btn">Watch Replay</button>
-            <button id="btn-retry" class="btn">Retry</button>
-            <button id="btn-victory-menu" class="btn btn-back">Menu</button>
+          <div class="total-score">
+            <span data-i18n="victory.totalPrefix">Total: </span><span id="victory-total">0</span>
           </div>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="menu-buttons">
+            <button id="btn-next-level" class="btn btn-primary" data-i18n="victory.nextLevel">
+              Next Level
+            </button>
+            <button id="btn-watch-replay" class="btn" data-i18n="victory.watchReplay">Watch Replay</button>
+            <button id="btn-retry" class="btn" data-i18n="victory.retry">Retry</button>
+            <button id="btn-victory-menu" class="btn btn-back" data-i18n="common.menu">Menu</button>
+          </div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
       <!-- ===================== GAME OVER ===================== -->
       <section id="screen-gameover" class="screen hidden overlay">
         <div class="menu-panel">
-          <h2 class="gameover-title">Time's Up</h2>
+          <h2 class="gameover-title" data-i18n="gameover.title">Time's Up</h2>
           <p id="gameover-reason">You ran out of time.</p>
           <div class="menu-buttons">
-            <button id="btn-gameover-retry" class="btn btn-primary">Retry</button>
-            <button id="btn-gameover-menu" class="btn btn-back">Menu</button>
+            <button id="btn-gameover-retry" class="btn btn-primary" data-i18n="victory.retry">
+              Retry
+            </button>
+            <button id="btn-gameover-menu" class="btn btn-back" data-i18n="common.menu">Menu</button>
           </div>
-          <div class="ownership-footer">Created by Saud Alqhtani | GitHub: sqp77</div>
+          <div class="ownership-footer" data-i18n="common.ownershipFooter">
+            Created by Saud Alqhtani | GitHub: sqp77
+          </div>
         </div>
       </section>
 
-      <div id="achievement-popup-container" class="achievement-popup-container"></div>
+      <div
+        id="achievement-popup-container"
+        class="achievement-popup-container"
+      ></div>
 
-      <div id="ownership-watermark" class="ownership-watermark">Created by Saud Alqhtani &middot; GitHub: sqp77</div>
+      <div id="ownership-watermark" class="ownership-watermark" data-i18n="common.creatorShort" dir="ltr">
+        Saud Alqhtani &bull; sqp77
+      </div>
 
       <div id="loading-screen" class="screen loading">
         <div class="loader"></div>
-        <div class="loading-text">Loading MASAR<span class="loading-ar"> — مسار</span></div>
-        <div class="loading-credit">Created by Saud Alqhtani | GitHub: sqp77</div>
+        <div class="loading-text">
+          Loading MASAR<span class="loading-ar"> — مسار</span>
+        </div>
+        <div class="loading-tagline" data-i18n="loading.tagline">Smart Driving &amp; Parking Simulator</div>
+        <div class="loading-credit" data-i18n="common.ownershipFooter">
+          Created by Saud Alqhtani | GitHub: sqp77
+        </div>
       </div>
     </div>
 

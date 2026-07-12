@@ -7,11 +7,51 @@
 
 import { starsForScore } from '../utils/scoring.js';
 import { makeSeededRandom } from '../utils/MathUtils.js';
-import { CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
+import { CHALLENGE_POOL, EVENT_CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
+import { LICENSE_ROUTES, LICENSE_TIER_IDS } from '../data/licenseRoutes.js';
+import { clampReputation, rankForScore, levelForXp } from '../utils/reputation.js';
+import { JOB_TYPE_IDS } from '../data/jobs.js';
 
 const STORAGE_KEY = 'parkmaster3d.save.v1';
-const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third', ghostReplay: true, assist: true };
+const DEFAULT_SETTINGS = {
+  volume: 0.7,
+  sensitivity: 1,
+  shadows: true,
+  camera: 'third',
+  ghostReplay: true,
+  assist: true,
+  language: 'en',
+  eventsEnabled: true,
+};
 const LEVEL_COUNT = 20;
+
+function defaultAcademyState() {
+  return { modules: {} };
+}
+
+function defaultAcademyModuleState() {
+  return { unlockedStage: 0, stars: {}, certified: false };
+}
+
+function defaultLicenseState() {
+  return { earned: false, earnedAt: null, passedRoutes: {}, earnedTiers: {} };
+}
+
+function defaultReputationState() {
+  return { score: 0 };
+}
+
+function defaultProgressionState() {
+  return { xp: 0 };
+}
+
+function defaultJobsState() {
+  return { activeJob: null, completed: Object.fromEntries(JOB_TYPE_IDS.map((id) => [id, 0])), history: [] };
+}
+
+function defaultLastPlayed() {
+  return { mode: null, cityLabel: null, at: null };
+}
 
 function defaultSave() {
   return {
@@ -38,6 +78,12 @@ function defaultSave() {
     vehicleUsage: {},
     coins: 0,
     daily: { date: '', items: [] },
+    academy: defaultAcademyState(),
+    license: defaultLicenseState(),
+    reputation: defaultReputationState(),
+    progression: defaultProgressionState(),
+    jobs: defaultJobsState(),
+    lastPlayed: defaultLastPlayed(),
   };
 }
 
@@ -84,6 +130,20 @@ export class SaveManager {
       levelStats: { ...(parsed.levelStats || {}) },
       totals: { ...defaultSave().totals, ...(parsed.totals || {}) },
       vehicleUsage: { ...(parsed.vehicleUsage || {}) },
+      academy: {
+        modules: Object.fromEntries(
+          Object.entries((parsed.academy || {}).modules || {}).map(([id, m]) => [id, { ...defaultAcademyModuleState(), ...m }])
+        ),
+      },
+      license: { ...defaultLicenseState(), ...(parsed.license || {}) },
+      reputation: { ...defaultReputationState(), ...(parsed.reputation || {}) },
+      progression: { ...defaultProgressionState(), ...(parsed.progression || {}) },
+      jobs: {
+        ...defaultJobsState(),
+        ...(parsed.jobs || {}),
+        completed: { ...defaultJobsState().completed, ...((parsed.jobs || {}).completed || {}) },
+      },
+      lastPlayed: { ...defaultLastPlayed(), ...(parsed.lastPlayed || {}) },
     };
   }
 
@@ -349,11 +409,14 @@ export class SaveManager {
 
   // Regenerates the day's challenge picks (deterministic per calendar date via the same seeded
   // RNG levels.js uses) only when the stored date has rolled over — a no-op every other call.
-  _ensureDaily() {
+  // `activeEventId` (optional) folds that event's bonus challenge into today's pool alongside the
+  // regular CHALLENGE_POOL — a no-op whenever no national event is active/enabled (see
+  // systems/EventManager.js), so existing daily-challenge behavior is unchanged outside events.
+  _ensureDaily(activeEventId) {
     const today = todayStr();
     if (this.data.daily.date === today) return;
     const rng = makeSeededRandom(Number(today.replace(/-/g, '')));
-    const pool = [...CHALLENGE_POOL];
+    const pool = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL.filter((c) => c.eventId === activeEventId)];
     const items = [];
     for (let i = 0; i < DAILY_COUNT && pool.length; i++) {
       const idx = Math.floor(rng() * pool.length);
@@ -365,20 +428,21 @@ export class SaveManager {
 
   // Merges today's saved progress ({id, progress, done}) with the static template (label/type/
   // target/reward) so the UI never has to touch CHALLENGE_POOL itself.
-  getDailyChallenges() {
-    this._ensureDaily();
-    return this.data.daily.items.map((item) => ({ ...item, ...CHALLENGE_POOL.find((c) => c.id === item.id) }));
+  getDailyChallenges(activeEventId) {
+    this._ensureDaily(activeEventId);
+    const allDefs = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL];
+    return this.data.daily.items.map((item) => ({ ...item, ...allDefs.find((c) => c.id === item.id) }));
   }
 
   // Called once per level completion with that run's outcome. Advances any not-yet-done daily
   // challenge it qualifies for and auto-awards coins the moment a challenge finishes (no separate
   // "claim" step, keeping the UI compact). Returns the challenges that just completed.
-  updateDailyProgress({ stars, collisions, elapsed }) {
-    this._ensureDaily();
+  updateDailyProgress({ stars, collisions, elapsed }, activeEventId) {
+    this._ensureDaily(activeEventId);
     const rewards = [];
     for (const item of this.data.daily.items) {
       if (item.done) continue;
-      const tmpl = CHALLENGE_POOL.find((c) => c.id === item.id);
+      const tmpl = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL].find((c) => c.id === item.id);
       if (!tmpl) continue;
       const qualifies =
         tmpl.type === 'complete' ||
@@ -461,5 +525,159 @@ export class SaveManager {
     this.data.noCollisionClearCount++;
     this._persist();
     return this.data.noCollisionClearCount;
+  }
+
+  // ---- Driving Academy progress (see data/academyLevels.js) ----
+
+  getAcademyModuleState(moduleId) {
+    return this.data.academy.modules[moduleId] || defaultAcademyModuleState();
+  }
+
+  // Records one finished stage attempt. Only raises `unlockedStage` (never lowers it on a
+  // replay) and keeps the best star count per stage, same "best persists" spirit as
+  // recordLevelResult. Returns true the first time `certified` flips on for this module.
+  recordAcademyStage(moduleId, stageIndex, stageCount, stars) {
+    const state = { ...defaultAcademyModuleState(), ...this.data.academy.modules[moduleId] };
+    state.unlockedStage = Math.max(state.unlockedStage, Math.min(stageIndex + 1, stageCount - 1));
+    state.stars = { ...state.stars, [stageIndex]: Math.max(state.stars[stageIndex] || 0, stars) };
+    const wasCertified = state.certified;
+    if (Object.keys(state.stars).length >= stageCount && Object.values(state.stars).every((s) => s > 0)) {
+      state.certified = true;
+    }
+    this.data.academy.modules[moduleId] = state;
+    this._persist();
+    return !wasCertified && state.certified;
+  }
+
+  getAcademyProgress() {
+    return this.data.academy.modules;
+  }
+
+  // ---- Driving License Test (see data/licenseRoutes.js) ----
+
+  getLicenseStatus() {
+    return this.data.license;
+  }
+
+  // Returns `{ tierEarned }` — the tier id if this result just completed every route in its
+  // tier for the first time (used by GameManager to fire a tier-unlock toast + vehicle check),
+  // or null otherwise. Mirrors recordAcademyStage's "only tell the caller about new milestones"
+  // shape.
+  recordLicenseRouteResult(routeId, passed) {
+    let tierEarned = null;
+    if (passed) {
+      this.data.license.passedRoutes[routeId] = true;
+      if (!this.data.license.earned) {
+        this.data.license.earned = true;
+        this.data.license.earnedAt = Date.now();
+      }
+      const route = LICENSE_ROUTES.find((r) => r.id === routeId);
+      const tier = route?.tier;
+      if (tier && !this.data.license.earnedTiers[tier]) {
+        const tierRoutes = LICENSE_ROUTES.filter((r) => r.tier === tier);
+        if (tierRoutes.every((r) => this.data.license.passedRoutes[r.id])) {
+          this.data.license.earnedTiers[tier] = true;
+          tierEarned = tier;
+        }
+      }
+    }
+    this._persist();
+    return { tierEarned };
+  }
+
+  isLicenseTierEarned(tier) {
+    return !!this.data.license.earnedTiers[tier];
+  }
+
+  isLicenseTierUnlocked(tier) {
+    const idx = LICENSE_TIER_IDS.indexOf(tier);
+    if (idx <= 0) return true;
+    return this.isLicenseTierEarned(LICENSE_TIER_IDS[idx - 1]);
+  }
+
+  getEarnedLicenseTierCount() {
+    return LICENSE_TIER_IDS.filter((t) => this.isLicenseTierEarned(t)).length;
+  }
+
+  // ---- Reputation (Feature 4) — score is the only persisted value, rank is always derived
+  // (see utils/reputation.js) so tuning rank thresholds never needs a save migration. ----
+
+  getReputation() {
+    const score = this.data.reputation.score;
+    return { score, rank: rankForScore(score) };
+  }
+
+  addReputation(delta) {
+    if (!delta) return { ...this.getReputation(), rankChanged: false };
+    const prevRank = rankForScore(this.data.reputation.score).id;
+    this.data.reputation.score = clampReputation(this.data.reputation.score + delta);
+    this._persist();
+    const next = this.getReputation();
+    return { ...next, rankChanged: next.rank.id !== prevRank };
+  }
+
+  // ---- Driver XP/level (Job System rewards) ----
+
+  getProgression() {
+    const xp = this.data.progression.xp;
+    return { xp, level: levelForXp(xp) };
+  }
+
+  addXP(delta) {
+    if (!delta) return { ...this.getProgression(), levelChanged: false };
+    const prevLevel = levelForXp(this.data.progression.xp);
+    this.data.progression.xp = Math.max(0, this.data.progression.xp + delta);
+    this._persist();
+    const next = this.getProgression();
+    return { ...next, levelChanged: next.level !== prevLevel };
+  }
+
+  // ---- Job System (Feature 2) ----
+
+  getActiveJob() {
+    return this.data.jobs.activeJob;
+  }
+
+  setActiveJob(job) {
+    this.data.jobs.activeJob = job;
+    this._persist();
+  }
+
+  clearActiveJob() {
+    this.data.jobs.activeJob = null;
+    this._persist();
+  }
+
+  // Persists a finished job's outcome (win or fail) and returns the running total for its type
+  // so callers can show "Parking Jobs completed: N" without a second read.
+  recordJobResult(type, success, reward = {}) {
+    if (success) {
+      this.data.jobs.completed[type] = (this.data.jobs.completed[type] || 0) + 1;
+    }
+    this.data.jobs.history.unshift({ type, success, coins: reward.coins || 0, xp: reward.xp || 0, at: Date.now() });
+    if (this.data.jobs.history.length > 20) this.data.jobs.history.length = 20;
+    this._persist();
+    return this.data.jobs.completed[type] || 0;
+  }
+
+  getJobStats() {
+    const completed = this.data.jobs.completed;
+    const total = Object.values(completed).reduce((sum, n) => sum + n, 0);
+    return { completed, total, history: this.data.jobs.history };
+  }
+
+  getVehicleCount() {
+    return this.data.unlockedVehicles.length;
+  }
+
+  // ---- Main menu Quick Access panel (display-only — never read by gameplay code) ----
+
+  recordLastPlayed({ mode, cityLabel }) {
+    this.data.lastPlayed = { mode, cityLabel: cityLabel || null, at: Date.now() };
+    this._persist();
+  }
+
+  getLastPlayed() {
+    return this.data.lastPlayed;
   }
 }
