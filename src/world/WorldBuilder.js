@@ -7,12 +7,14 @@
 
 import * as THREE from 'three';
 import { createCarModel } from '../entities/Car.js';
-import { getTheme } from './themes.js';
+import { getTheme, CITY_THEME_IDS } from './themes.js';
 import { makeSeededRandom } from '../utils/MathUtils.js';
 import { AISLE_HALF_WIDTH } from './levels.js';
 import { SAUDI_STREET_NAMES } from '../data/saudiTheme.js';
+import { ROAD_SIGNS } from '../data/roadSigns.js';
 
 const OBSTACLE_CAR_COLORS = [0x8a8f97, 0x5c6470, 0x9c7a5a, 0x4a5568, 0x6b6f76, 0x7c8590, 0xa3b1c2];
+const FLAG_THEME_IDS = new Set(['downtown', 'drivingSchool', ...CITY_THEME_IDS]);
 
 // Builds and tears down the full drivable environment for one level: sky/fog/lights,
 // ground, a sidewalk+curb perimeter (also the physical/collidable level boundary),
@@ -69,13 +71,19 @@ export class WorldBuilder {
     });
   }
 
+  // `levelConfig.eventAccent` (optional hex color) and `.eventFlagBonus` (optional bool) are set
+  // by GameManager only when EventManager reports an active, enabled national event — both are
+  // no-ops on every existing campaign level, which never sets them. `levelConfig.signs` (optional
+  // array of {x, z, id}) places bilingual regulatory road-sign props (see data/roadSigns.js),
+  // used by Academy/License scenes.
   build(levelConfig) {
     this.clear();
     const theme = getTheme(levelConfig.theme);
     const night = levelConfig.night || theme.night;
-    const themed = { ...theme, night };
+    const themed = { ...theme, night, lampColor: levelConfig.eventAccent || theme.lampColor };
     const rng = makeSeededRandom(levelConfig.seed);
     const { halfX, halfZ } = levelConfig.bounds;
+    this._flagCount = levelConfig.eventFlagBonus ? 2 : 1;
 
     this._setupSkyAndLights(themed);
     this._buildGround(themed, halfX, halfZ);
@@ -88,6 +96,7 @@ export class WorldBuilder {
     this._buildStreetSign(levelConfig.carStart, rng);
     this._buildSpotMarkings(themed, levelConfig.spots);
     this._buildObstacles(rng, levelConfig.obstacles);
+    this._buildRegulatorySigns(levelConfig.signs);
 
     this.physics.setBoundary(halfX, halfZ);
     return { theme: themed };
@@ -186,10 +195,14 @@ export class WorldBuilder {
     }
 
     // One Saudi flag near the building cluster, sparingly: only for civic-feel themes (downtown's
-    // government/city buildings, driving-school areas), never per-building, so it never overcrowds
-    // the map.
-    if (theme.id === 'downtown' || theme.id === 'drivingSchool') {
-      this._buildFlag(halfX * 0.35, (halfZ + depthOffset) * (rng() < 0.5 ? 1 : -1));
+    // government/city buildings, driving-school areas, and the Saudi city-inspired Academy/License
+    // themes), never per-building, so it never overcrowds the map. A second flag only appears when
+    // a national event bumps `flagCount` (see EventManager / build()'s eventAccent handling below).
+    if (FLAG_THEME_IDS.has(theme.id)) {
+      const count = Math.min(this._flagCount || 1, 2);
+      for (let i = 0; i < count; i++) {
+        this._buildFlag(halfX * (0.35 + i * 0.25), (halfZ + depthOffset) * (rng() < 0.5 ? 1 : -1));
+      }
     }
   }
 
@@ -426,6 +439,98 @@ export class WorldBuilder {
     pole.castShadow = true;
     board.castShadow = true;
     this.group.add(pole, board);
+  }
+
+  // Renders one bilingual regulatory road-sign board (Arabic primary, English legend beneath),
+  // shape/color driven by data/roadSigns.js so STOP reads as a red octagon, NO PARKING as a
+  // red-ringed circle, warnings as yellow diamonds, and informational signs as green/blue
+  // rectangles — same "canvas texture on a small board" technique as the street/entrance signs
+  // above, just with a shape silhouette behind the text instead of a plain rectangle fill.
+  _makeRegulatorySignTexture(sign) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size * 0.44;
+
+    ctx.fillStyle = sign.bg;
+    ctx.strokeStyle = sign.fg;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    if (sign.shape === 'octagon') {
+      for (let i = 0; i < 8; i++) {
+        const a = (Math.PI / 8) + (i * Math.PI) / 4;
+        const px = cx + r * Math.cos(a);
+        const py = cy + r * Math.sin(a);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+    } else if (sign.shape === 'diamond') {
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r);
+      ctx.lineTo(cx - r, cy);
+      ctx.closePath();
+    } else if (sign.shape === 'circle') {
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    } else {
+      const inset = size * 0.08;
+      ctx.rect(inset, inset, size - inset * 2, size - inset * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    if (sign.shape === 'circle') {
+      // Prohibition ring + diagonal slash (e.g. NO PARKING) rather than a filled disc.
+      ctx.strokeStyle = sign.fg;
+      ctx.lineWidth = size * 0.07;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.82, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.6, cy + r * 0.6);
+      ctx.lineTo(cx + r * 0.6, cy - r * 0.6);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = sign.fg;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.direction = 'rtl';
+    ctx.font = `bold ${Math.round(size * 0.2)}px sans-serif`;
+    ctx.fillText(sign.ar, cx, cy - size * 0.06);
+    ctx.direction = 'ltr';
+    ctx.font = `${Math.round(size * 0.09)}px sans-serif`;
+    ctx.fillText(sign.en, cx, cy + size * 0.2);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _buildRegulatorySign(x, z, signId) {
+    const sign = ROAD_SIGNS[signId];
+    if (!sign) return;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 2.3, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+    const board = new THREE.Mesh(
+      new THREE.CircleGeometry(0.42, 24),
+      new THREE.MeshStandardMaterial({ map: this._makeRegulatorySignTexture(sign), side: THREE.DoubleSide })
+    );
+    pole.position.set(x, 1.1, z);
+    board.position.set(x, 2.15, z);
+    pole.castShadow = true;
+    board.castShadow = true;
+    this.group.add(pole, board);
+  }
+
+  // Places a handful of regulatory signs (Academy/License scenes only — campaign levels never
+  // set `signs`) sparingly, so the scene never feels overcrowded per the design brief.
+  _buildRegulatorySigns(signs) {
+    if (!signs || !signs.length) return;
+    for (const s of signs) this._buildRegulatorySign(s.x, s.z, s.id);
   }
 
   // Simple green-field Saudi flag texture — a plain white sword silhouette drawn with canvas

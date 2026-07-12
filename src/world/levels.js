@@ -19,13 +19,13 @@ import { degToRad, makeSeededRandom } from '../utils/MathUtils.js';
 import { getTheme } from './themes.js';
 
 export const AISLE_HALF_WIDTH = 4.2; // driving lane half-width running along the X axis at z=0
-const PARALLEL_LANE_OFFSET = 2.9; // lateral offset of a parallel bay's near edge from the lane center
+export const PARALLEL_LANE_OFFSET = 2.9; // lateral offset of a parallel bay's near edge from the lane center
 
-function poseToBox(type, x, z, heading, width, length, extra) {
+export function poseToBox(type, x, z, heading, width, length, extra) {
   return { type, x, z, angle: heading - Math.PI / 2, halfWidth: width / 2, halfDepth: length / 2, ...extra };
 }
 
-function makeSpot({ id, x, z, heading, width, depth, type = 'perpendicular', requireReverse = false, tolerance, isTarget = true, holdTime = 1.1 }) {
+export function makeSpot({ id, x, z, heading, width, depth, type = 'perpendicular', requireReverse = false, tolerance, isTarget = true, holdTime = 1.1 }) {
   const box = poseToBox('spot', x, z, heading, width, depth);
   return {
     ...box,
@@ -41,7 +41,7 @@ function makeSpot({ id, x, z, heading, width, depth, type = 'perpendicular', req
 
 // Neighboring parked cars offset along the perpendicular axis (side-by-side row) —
 // used for perpendicular/angled spots.
-function flankSideBySide(spot, rng, { gap = 0.5, carWidth = 1.9, carLength = 4.5, sides = ['left', 'right'] } = {}) {
+export function flankSideBySide(spot, rng, { gap = 0.5, carWidth = 1.9, carLength = 4.5, sides = ['left', 'right'] } = {}) {
   const perp = { x: -Math.sin(spot.heading), z: Math.cos(spot.heading) };
   const offset = spot.halfWidth + gap + carWidth / 2;
   const obstacles = [];
@@ -57,7 +57,7 @@ function flankSideBySide(spot, rng, { gap = 0.5, carWidth = 1.9, carLength = 4.5
 
 // Neighboring parked cars offset along the heading axis (front/back) — used for
 // parallel parking bays.
-function flankFrontBack(spot, rng, { gap = 0.4, carWidth = 1.9, carLength = 4.5 } = {}) {
+export function flankFrontBack(spot, rng, { gap = 0.4, carWidth = 1.9, carLength = 4.5 } = {}) {
   const fwd = { x: Math.cos(spot.heading), z: Math.sin(spot.heading) };
   const offset = spot.halfDepth + gap + carLength / 2;
   const obstacles = [];
@@ -70,7 +70,7 @@ function flankFrontBack(spot, rng, { gap = 0.4, carWidth = 1.9, carLength = 4.5 
   return obstacles;
 }
 
-function computeBounds(carStart, spots, obstacles, margin = 15) {
+export function computeBounds(carStart, spots, obstacles, margin = 15) {
   const xs = [carStart.x, ...spots.map((s) => s.x), ...obstacles.map((o) => o.x)];
   const zs = [carStart.z, ...spots.map((s) => s.z), ...obstacles.map((o) => o.z)];
   const halfX = Math.max(...xs.map(Math.abs)) + margin;
@@ -78,7 +78,7 @@ function computeBounds(carStart, spots, obstacles, margin = 15) {
   return { halfX, halfZ };
 }
 
-function perpendicularHeading(onPositiveZSide) {
+export function perpendicularHeading(onPositiveZSide) {
   return onPositiveZSide ? Math.PI / 2 : -Math.PI / 2;
 }
 
@@ -99,7 +99,7 @@ function level1() {
     carStart,
     spots: [spot],
     obstacles: [],
-    objective: 'Drive forward and park inside the marked spot',
+    objective: 'objective.level1',
     bounds: computeBounds(carStart, [spot], []),
   };
 }
@@ -119,7 +119,7 @@ function level2() {
     carStart,
     spots: [spot],
     obstacles,
-    objective: 'Park between the two parked cars',
+    objective: 'objective.level2',
     bounds: computeBounds(carStart, [spot], obstacles),
   };
 }
@@ -139,7 +139,7 @@ function level3() {
     carStart,
     spots: [spot],
     obstacles,
-    objective: 'Angled parking: ease in at the marked angle',
+    objective: 'objective.level3',
     bounds: computeBounds(carStart, [spot], obstacles),
   };
 }
@@ -159,7 +159,7 @@ function level4() {
     carStart,
     spots: [spot],
     obstacles,
-    objective: 'Tight spot — line up carefully before pulling in',
+    objective: 'objective.level4',
     bounds: computeBounds(carStart, [spot], obstacles),
   };
 }
@@ -182,7 +182,7 @@ function level5() {
     carStart,
     spots: [spot],
     obstacles,
-    objective: 'Mind the cone — angled parking under time pressure',
+    objective: 'objective.level5',
     bounds: computeBounds(carStart, [spot], obstacles),
   };
 }
@@ -210,7 +210,7 @@ function level6() {
     carStart,
     spots: [spot],
     obstacles,
-    objective: 'First parallel park — pull alongside, then reverse in',
+    objective: 'objective.level6',
     bounds: computeBounds(carStart, [spot], obstacles),
   };
 }
@@ -315,12 +315,12 @@ function buildProceduralLevel(id) {
     traffic: cfg.traffic || {},
     objective:
       cfg.decoys > 0
-        ? 'Park in the highlighted spot — ignore the decoys'
+        ? 'objective.decoys'
         : cfg.requireReverse
-          ? 'Reverse parking required — back into the marked spot'
+          ? 'objective.requireReverse'
           : cfg.type === 'parallel'
-            ? 'Parallel park within the marked bay'
-            : 'Park accurately inside the marked spot',
+            ? 'objective.parallel'
+            : 'objective.default',
     bounds: computeBounds(carStart, spots, obstacles),
   };
 }
@@ -329,8 +329,10 @@ export const LEVEL_COUNT = 20;
 
 // Derives the display parking-type id (parallel/reverse/perpendicular/angled) from the
 // target spot's own data — `requireReverse` takes priority over the base shape since a
-// reverse-in challenge is presented as its own category regardless of bay shape.
-function resolveParkingType(spots) {
+// reverse-in challenge is presented as its own category regardless of bay shape. Exported so
+// GameManager can resolve it for Academy/License leg configs, which don't go through
+// getLevelConfig.
+export function resolveParkingType(spots) {
   const target = spots.find((s) => s.isTarget) || spots[0];
   if (!target) return 'perpendicular';
   return target.requireReverse ? 'reverse' : target.type;

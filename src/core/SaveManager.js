@@ -7,11 +7,32 @@
 
 import { starsForScore } from '../utils/scoring.js';
 import { makeSeededRandom } from '../utils/MathUtils.js';
-import { CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
+import { CHALLENGE_POOL, EVENT_CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
 
 const STORAGE_KEY = 'parkmaster3d.save.v1';
-const DEFAULT_SETTINGS = { volume: 0.7, sensitivity: 1, shadows: true, camera: 'third', ghostReplay: true, assist: true };
+const DEFAULT_SETTINGS = {
+  volume: 0.7,
+  sensitivity: 1,
+  shadows: true,
+  camera: 'third',
+  ghostReplay: true,
+  assist: true,
+  language: 'en',
+  eventsEnabled: true,
+};
 const LEVEL_COUNT = 20;
+
+function defaultAcademyState() {
+  return { modules: {} };
+}
+
+function defaultAcademyModuleState() {
+  return { unlockedStage: 0, stars: {}, certified: false };
+}
+
+function defaultLicenseState() {
+  return { earned: false, earnedAt: null, passedRoutes: {} };
+}
 
 function defaultSave() {
   return {
@@ -38,6 +59,8 @@ function defaultSave() {
     vehicleUsage: {},
     coins: 0,
     daily: { date: '', items: [] },
+    academy: defaultAcademyState(),
+    license: defaultLicenseState(),
   };
 }
 
@@ -84,6 +107,12 @@ export class SaveManager {
       levelStats: { ...(parsed.levelStats || {}) },
       totals: { ...defaultSave().totals, ...(parsed.totals || {}) },
       vehicleUsage: { ...(parsed.vehicleUsage || {}) },
+      academy: {
+        modules: Object.fromEntries(
+          Object.entries((parsed.academy || {}).modules || {}).map(([id, m]) => [id, { ...defaultAcademyModuleState(), ...m }])
+        ),
+      },
+      license: { ...defaultLicenseState(), ...(parsed.license || {}) },
     };
   }
 
@@ -349,11 +378,14 @@ export class SaveManager {
 
   // Regenerates the day's challenge picks (deterministic per calendar date via the same seeded
   // RNG levels.js uses) only when the stored date has rolled over — a no-op every other call.
-  _ensureDaily() {
+  // `activeEventId` (optional) folds that event's bonus challenge into today's pool alongside the
+  // regular CHALLENGE_POOL — a no-op whenever no national event is active/enabled (see
+  // systems/EventManager.js), so existing daily-challenge behavior is unchanged outside events.
+  _ensureDaily(activeEventId) {
     const today = todayStr();
     if (this.data.daily.date === today) return;
     const rng = makeSeededRandom(Number(today.replace(/-/g, '')));
-    const pool = [...CHALLENGE_POOL];
+    const pool = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL.filter((c) => c.eventId === activeEventId)];
     const items = [];
     for (let i = 0; i < DAILY_COUNT && pool.length; i++) {
       const idx = Math.floor(rng() * pool.length);
@@ -365,20 +397,21 @@ export class SaveManager {
 
   // Merges today's saved progress ({id, progress, done}) with the static template (label/type/
   // target/reward) so the UI never has to touch CHALLENGE_POOL itself.
-  getDailyChallenges() {
-    this._ensureDaily();
-    return this.data.daily.items.map((item) => ({ ...item, ...CHALLENGE_POOL.find((c) => c.id === item.id) }));
+  getDailyChallenges(activeEventId) {
+    this._ensureDaily(activeEventId);
+    const allDefs = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL];
+    return this.data.daily.items.map((item) => ({ ...item, ...allDefs.find((c) => c.id === item.id) }));
   }
 
   // Called once per level completion with that run's outcome. Advances any not-yet-done daily
   // challenge it qualifies for and auto-awards coins the moment a challenge finishes (no separate
   // "claim" step, keeping the UI compact). Returns the challenges that just completed.
-  updateDailyProgress({ stars, collisions, elapsed }) {
-    this._ensureDaily();
+  updateDailyProgress({ stars, collisions, elapsed }, activeEventId) {
+    this._ensureDaily(activeEventId);
     const rewards = [];
     for (const item of this.data.daily.items) {
       if (item.done) continue;
-      const tmpl = CHALLENGE_POOL.find((c) => c.id === item.id);
+      const tmpl = [...CHALLENGE_POOL, ...EVENT_CHALLENGE_POOL].find((c) => c.id === item.id);
       if (!tmpl) continue;
       const qualifies =
         tmpl.type === 'complete' ||
@@ -461,5 +494,48 @@ export class SaveManager {
     this.data.noCollisionClearCount++;
     this._persist();
     return this.data.noCollisionClearCount;
+  }
+
+  // ---- Driving Academy progress (see data/academyLevels.js) ----
+
+  getAcademyModuleState(moduleId) {
+    return this.data.academy.modules[moduleId] || defaultAcademyModuleState();
+  }
+
+  // Records one finished stage attempt. Only raises `unlockedStage` (never lowers it on a
+  // replay) and keeps the best star count per stage, same "best persists" spirit as
+  // recordLevelResult. Returns true the first time `certified` flips on for this module.
+  recordAcademyStage(moduleId, stageIndex, stageCount, stars) {
+    const state = { ...defaultAcademyModuleState(), ...this.data.academy.modules[moduleId] };
+    state.unlockedStage = Math.max(state.unlockedStage, Math.min(stageIndex + 1, stageCount - 1));
+    state.stars = { ...state.stars, [stageIndex]: Math.max(state.stars[stageIndex] || 0, stars) };
+    const wasCertified = state.certified;
+    if (Object.keys(state.stars).length >= stageCount && Object.values(state.stars).every((s) => s > 0)) {
+      state.certified = true;
+    }
+    this.data.academy.modules[moduleId] = state;
+    this._persist();
+    return !wasCertified && state.certified;
+  }
+
+  getAcademyProgress() {
+    return this.data.academy.modules;
+  }
+
+  // ---- Driving License Test (see data/licenseRoutes.js) ----
+
+  getLicenseStatus() {
+    return this.data.license;
+  }
+
+  recordLicenseRouteResult(routeId, passed) {
+    if (passed) {
+      this.data.license.passedRoutes[routeId] = true;
+      if (!this.data.license.earned) {
+        this.data.license.earned = true;
+        this.data.license.earnedAt = Date.now();
+      }
+    }
+    this._persist();
   }
 }
