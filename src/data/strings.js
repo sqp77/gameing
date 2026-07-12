@@ -305,4 +305,64 @@ export const STRINGS = {
   'event.nationalDay.name': { en: 'Saudi National Day', ar: 'اليوم الوطني السعودي' },
   'event.foundingDay.name': { en: 'Founding Day', ar: 'يوم التأسيس' },
   'event.riyadhSeason.name': { en: 'Riyadh Season', ar: 'موسم الرياض' },
+
+  // ---- v1.1.0: Open World Hub (Feature 1) ----
+  'menu.openWorld': { en: 'Explore Open World', ar: 'استكشف العالم المفتوح' },
+  'hub.freeRoam': { en: 'Free Roam — drive to a landmark or job marker', ar: 'تجوّل حر — توجّه إلى معلم أو مهمة' },
+  'hub.academy.name': { en: 'MASAR Academy', ar: 'أكاديمية مسار' },
+  'hub.license.name': { en: 'License Center', ar: 'مركز رخص القيادة' },
+  'hub.shop.name': { en: 'Dealership', ar: 'معرض السيارات' },
+  'hub.academy.desc': { en: 'Driving Academy training modules', ar: 'وحدات تدريب أكاديمية القيادة' },
+  'hub.license.desc': { en: 'MASAR Driving License Test', ar: 'اختبار رخصة قيادة مسار' },
+  'hub.shop.desc': { en: 'Buy and select vehicles', ar: 'شراء واختيار المركبات' },
+  'common.version': { en: 'v1.1.0', ar: 'الإصدار 1.1.0' },
+  'common.appTitle': { en: 'MASAR — Smart Driving & Parking Simulator', ar: 'مسار — محاكي القيادة والاصطفاف الذكي' },
+
+  // ---- v1.1.0: Job System (Feature 2) ----
+  'jobs.accept': { en: 'Accept', ar: 'قبول' },
+  'jobs.decline': { en: 'Decline', ar: 'رفض' },
+  'jobs.arrivedPickup': { en: 'Package picked up — head to the drop-off', ar: 'تم الاستلام — توجّه لنقطة التسليم' },
+  'jobs.completedToast': { en: 'Job complete! +{0} coins, +{1} XP', ar: 'اكتملت المهمة! +{0} عملة، +{1} خبرة' },
+  'jobs.failedToast': { en: 'Job failed — time ran out', ar: 'فشلت المهمة — انتهى الوقت' },
+  'jobs.type.parking': { en: 'Parking Job', ar: 'مهمة اصطفاف' },
+  'jobs.desc.parking': { en: 'Park the vehicle accurately in the marked spot', ar: 'اصطفّ المركبة بدقة في المكان المحدد' },
+  'jobs.type.delivery': { en: 'Delivery Mission', ar: 'مهمة توصيل' },
+  'jobs.desc.delivery': { en: 'Deliver the package to the drop-off marker', ar: 'وصّل الطرد إلى نقطة التسليم' },
+  'jobs.type.taxi': { en: 'Taxi Mission', ar: 'مهمة تكسي' },
+  'jobs.desc.taxi': { en: 'Drive the passenger to their destination', ar: 'أوصل الراكب إلى وجهته' },
+  'jobs.type.valet': { en: 'Valet Parking Mission', ar: 'مهمة صف السيارات' },
+  'jobs.desc.valet': { en: 'Drive the car to the destination and park it perfectly', ar: 'أوصل السيارة إلى الوجهة واصطفّها بإتقان' },
+
+  // ---- v1.1.0: Reputation (Feature 4) ----
+  'reputation.rank.beginner': { en: 'Beginner Driver', ar: 'سائق مبتدئ' },
+  'reputation.rank.skilled': { en: 'Skilled Driver', ar: 'سائق ماهر' },
+  'reputation.rank.advanced': { en: 'Advanced Driver', ar: 'سائق متقدم' },
+  'reputation.rank.professional': { en: 'Professional Driver', ar: 'سائق محترف' },
+  'reputation.rank.master': { en: 'MASAR Master', ar: 'أسطورة مسار' },
+  'reputation.rankUpToast': { en: 'New rank: {0}', ar: 'رتبة جديدة: {0}' },
+
+  // ---- v1.1.0: Traffic Police (Feature 5) ----
+  'police.warningToast': { en: 'Police warning: drive safely', ar: 'تحذير من الشرطة: قد بأمان' },
+  'police.fineToast': { en: 'Fined by traffic police: -{0} coins', ar: 'غرامة من شرطة المرور: -{0} عملة' },
+
+  // ---- v1.1.0: Expanded License Program (Feature 6) ----
+  'license.tier.beginner': { en: 'Beginner License', ar: 'رخصة مبتدئ' },
+  'license.tier.intermediate': { en: 'Intermediate License', ar: 'رخصة متوسطة' },
+  'license.tier.advanced': { en: 'Advanced License', ar: 'رخصة متقدمة' },
+  'license.tier.professional': { en: 'Professional License', ar: 'رخصة احترافية' },
+  'license.tierLocked': { en: 'Complete the previous tier to unlock', ar: 'أكمل المستوى السابق للفتح' },
+  'license.tierEarnedToast': { en: '{0} earned!', ar: 'تم الحصول على {0}!' },
+
+  // ---- v1.1.0: Player Profile (Feature 8) ----
+  'progress.stat.driverRank': { en: 'Driver Rank', ar: 'رتبة السائق' },
+  'progress.stat.reputation': { en: 'Reputation', ar: 'السمعة' },
+  'progress.stat.driverLevel': { en: 'Driver Level', ar: 'مستوى السائق' },
+  'progress.stat.vehiclesOwned': { en: 'Vehicles Owned', ar: 'المركبات المملوكة' },
+  'progress.stat.licensesEarned': { en: 'Licenses Earned', ar: 'الرخص المكتسبة' },
+  'progress.stat.missionsCompleted': { en: 'Missions Completed', ar: 'المهام المكتملة' },
+
+  // ---- v1.1.0: new vehicles (License tier unlocks) ----
+  'vehicle.taxi.name': { en: 'MASAR Taxi', ar: 'تكسي مسار' },
+  'vehicle.van.name': { en: 'Delivery Van', ar: 'شاحنة التوصيل' },
+  'vehicle.sportscar.name': { en: 'Falcon Sports Car', ar: 'سيارة الصقر الرياضية' },
 };

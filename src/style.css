@@ -1019,3 +1019,47 @@ h2 {
 [dir='rtl'] .account-bar { text-align: right; }
 [dir='rtl'] .auth-welcome,
 [dir='rtl'] .confirm-copy { text-align: center; }
+
+/* ===================== v1.1.0 Open World Hub ===================== */
+.version-footer {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.55;
+}
+
+.hud-rank-badge {
+  color: var(--accent-2);
+  border-color: rgba(255, 179, 0, 0.35);
+}
+.hud-rank-badge.hidden { display: none; }
+#btn-hud-restart.hidden,
+#btn-restart.hidden { display: none; }
+
+.hub-job-offer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, 86vw);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 25;
+}
+.hub-job-offer.hidden { display: none; }
+.hub-job-offer-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.hub-job-offer-desc { color: var(--text); font-size: 14px; margin-bottom: 10px; }
+.hub-job-offer-reward { color: var(--accent-2); font-weight: 700; font-size: 13px; margin-bottom: 14px; }
+.hub-job-offer-buttons { flex-direction: row; gap: 10px; margin-top: 0; }
+.hub-job-offer-buttons .btn { flex: 1; }

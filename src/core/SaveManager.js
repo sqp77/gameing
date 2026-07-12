@@ -8,6 +8,9 @@
 import { starsForScore } from '../utils/scoring.js';
 import { makeSeededRandom } from '../utils/MathUtils.js';
 import { CHALLENGE_POOL, EVENT_CHALLENGE_POOL, DAILY_COUNT } from '../data/challenges.js';
+import { LICENSE_ROUTES, LICENSE_TIER_IDS } from '../data/licenseRoutes.js';
+import { clampReputation, rankForScore, levelForXp } from '../utils/reputation.js';
+import { JOB_TYPE_IDS } from '../data/jobs.js';
 
 const STORAGE_KEY = 'parkmaster3d.save.v1';
 const DEFAULT_SETTINGS = {
@@ -31,7 +34,23 @@ function defaultAcademyModuleState() {
 }
 
 function defaultLicenseState() {
-  return { earned: false, earnedAt: null, passedRoutes: {} };
+  return { earned: false, earnedAt: null, passedRoutes: {}, earnedTiers: {} };
+}
+
+function defaultReputationState() {
+  return { score: 0 };
+}
+
+function defaultProgressionState() {
+  return { xp: 0 };
+}
+
+function defaultJobsState() {
+  return { activeJob: null, completed: Object.fromEntries(JOB_TYPE_IDS.map((id) => [id, 0])), history: [] };
+}
+
+function defaultLastPlayed() {
+  return { mode: null, cityLabel: null, at: null };
 }
 
 function defaultSave() {
@@ -61,6 +80,10 @@ function defaultSave() {
     daily: { date: '', items: [] },
     academy: defaultAcademyState(),
     license: defaultLicenseState(),
+    reputation: defaultReputationState(),
+    progression: defaultProgressionState(),
+    jobs: defaultJobsState(),
+    lastPlayed: defaultLastPlayed(),
   };
 }
 
@@ -113,6 +136,14 @@ export class SaveManager {
         ),
       },
       license: { ...defaultLicenseState(), ...(parsed.license || {}) },
+      reputation: { ...defaultReputationState(), ...(parsed.reputation || {}) },
+      progression: { ...defaultProgressionState(), ...(parsed.progression || {}) },
+      jobs: {
+        ...defaultJobsState(),
+        ...(parsed.jobs || {}),
+        completed: { ...defaultJobsState().completed, ...((parsed.jobs || {}).completed || {}) },
+      },
+      lastPlayed: { ...defaultLastPlayed(), ...(parsed.lastPlayed || {}) },
     };
   }
 
@@ -528,14 +559,125 @@ export class SaveManager {
     return this.data.license;
   }
 
+  // Returns `{ tierEarned }` — the tier id if this result just completed every route in its
+  // tier for the first time (used by GameManager to fire a tier-unlock toast + vehicle check),
+  // or null otherwise. Mirrors recordAcademyStage's "only tell the caller about new milestones"
+  // shape.
   recordLicenseRouteResult(routeId, passed) {
+    let tierEarned = null;
     if (passed) {
       this.data.license.passedRoutes[routeId] = true;
       if (!this.data.license.earned) {
         this.data.license.earned = true;
         this.data.license.earnedAt = Date.now();
       }
+      const route = LICENSE_ROUTES.find((r) => r.id === routeId);
+      const tier = route?.tier;
+      if (tier && !this.data.license.earnedTiers[tier]) {
+        const tierRoutes = LICENSE_ROUTES.filter((r) => r.tier === tier);
+        if (tierRoutes.every((r) => this.data.license.passedRoutes[r.id])) {
+          this.data.license.earnedTiers[tier] = true;
+          tierEarned = tier;
+        }
+      }
     }
     this._persist();
+    return { tierEarned };
+  }
+
+  isLicenseTierEarned(tier) {
+    return !!this.data.license.earnedTiers[tier];
+  }
+
+  isLicenseTierUnlocked(tier) {
+    const idx = LICENSE_TIER_IDS.indexOf(tier);
+    if (idx <= 0) return true;
+    return this.isLicenseTierEarned(LICENSE_TIER_IDS[idx - 1]);
+  }
+
+  getEarnedLicenseTierCount() {
+    return LICENSE_TIER_IDS.filter((t) => this.isLicenseTierEarned(t)).length;
+  }
+
+  // ---- Reputation (Feature 4) — score is the only persisted value, rank is always derived
+  // (see utils/reputation.js) so tuning rank thresholds never needs a save migration. ----
+
+  getReputation() {
+    const score = this.data.reputation.score;
+    return { score, rank: rankForScore(score) };
+  }
+
+  addReputation(delta) {
+    if (!delta) return { ...this.getReputation(), rankChanged: false };
+    const prevRank = rankForScore(this.data.reputation.score).id;
+    this.data.reputation.score = clampReputation(this.data.reputation.score + delta);
+    this._persist();
+    const next = this.getReputation();
+    return { ...next, rankChanged: next.rank.id !== prevRank };
+  }
+
+  // ---- Driver XP/level (Job System rewards) ----
+
+  getProgression() {
+    const xp = this.data.progression.xp;
+    return { xp, level: levelForXp(xp) };
+  }
+
+  addXP(delta) {
+    if (!delta) return { ...this.getProgression(), levelChanged: false };
+    const prevLevel = levelForXp(this.data.progression.xp);
+    this.data.progression.xp = Math.max(0, this.data.progression.xp + delta);
+    this._persist();
+    const next = this.getProgression();
+    return { ...next, levelChanged: next.level !== prevLevel };
+  }
+
+  // ---- Job System (Feature 2) ----
+
+  getActiveJob() {
+    return this.data.jobs.activeJob;
+  }
+
+  setActiveJob(job) {
+    this.data.jobs.activeJob = job;
+    this._persist();
+  }
+
+  clearActiveJob() {
+    this.data.jobs.activeJob = null;
+    this._persist();
+  }
+
+  // Persists a finished job's outcome (win or fail) and returns the running total for its type
+  // so callers can show "Parking Jobs completed: N" without a second read.
+  recordJobResult(type, success, reward = {}) {
+    if (success) {
+      this.data.jobs.completed[type] = (this.data.jobs.completed[type] || 0) + 1;
+    }
+    this.data.jobs.history.unshift({ type, success, coins: reward.coins || 0, xp: reward.xp || 0, at: Date.now() });
+    if (this.data.jobs.history.length > 20) this.data.jobs.history.length = 20;
+    this._persist();
+    return this.data.jobs.completed[type] || 0;
+  }
+
+  getJobStats() {
+    const completed = this.data.jobs.completed;
+    const total = Object.values(completed).reduce((sum, n) => sum + n, 0);
+    return { completed, total, history: this.data.jobs.history };
+  }
+
+  getVehicleCount() {
+    return this.data.unlockedVehicles.length;
+  }
+
+  // ---- Main menu Quick Access panel (display-only — never read by gameplay code) ----
+
+  recordLastPlayed({ mode, cityLabel }) {
+    this.data.lastPlayed = { mode, cityLabel: cityLabel || null, at: Date.now() };
+    this._persist();
+  }
+
+  getLastPlayed() {
+    return this.data.lastPlayed;
   }
 }

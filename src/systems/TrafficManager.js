@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { createCarModel } from '../entities/Car.js';
+import { createPedestrianModel } from '../entities/Pedestrian.js';
 import { makeSeededRandom, lerp } from '../utils/MathUtils.js';
 import { AISLE_HALF_WIDTH } from '../world/levels.js';
 
@@ -85,15 +86,7 @@ export class TrafficManager {
   }
 
   _spawnPedestrian(rng, halfX, laneHalf) {
-    const body = new THREE.Group();
-    const torso = new THREE.Mesh(
-      new THREE.BoxGeometry(0.42, 0.9, 0.28),
-      new THREE.MeshStandardMaterial({ color: 0x2b3a55, roughness: 0.85 })
-    );
-    torso.position.y = 0.55;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshStandardMaterial({ color: 0xd9b48f, roughness: 0.7 }));
-    head.position.y = 1.12;
-    body.add(torso, head);
+    const body = createPedestrianModel();
 
     const x = -halfX + 3 + rng() * (halfX * 2 - 6);
     const z0 = -laneHalf + rng() * 0.4;

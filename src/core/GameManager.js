@@ -30,10 +30,20 @@ import { VEHICLE_PRESETS } from '../entities/Car.js';
 import { getLevelConfig, LEVEL_COUNT, resolveParkingType } from '../world/levels.js';
 import { ACADEMY_MODULES, getAcademyStageConfig } from '../data/academyLevels.js';
 import { LICENSE_ROUTES, getLicenseRoute, getLicenseLegConfig } from '../data/licenseRoutes.js';
+import { HubBuilder } from '../world/HubBuilder.js';
+import { HubTriggerManager } from '../systems/HubTriggerManager.js';
+import { HubTrafficManager } from '../systems/HubTrafficManager.js';
+import { PoliceManager } from '../systems/PoliceManager.js';
+import { JobManager } from '../systems/JobManager.js';
+import { JOB_TYPES } from '../data/jobs.js';
+import { HUB_CAR_START, HUB_THEME_ID } from '../data/hubMap.js';
+import { REPUTATION_DELTA } from '../utils/reputation.js';
+import { getTheme } from '../world/themes.js';
 
 const COLLISION_TOAST_COOLDOWN = 1.0;
 const BOUNDARY_TOAST_COOLDOWN = 2.0;
 const COLLISION_IMPACT_THRESHOLD = 1.2;
+export const MASAR_VERSION = '1.1.0';
 
 // Top-level orchestrator: owns the renderer/scene/camera/clock, every subsystem, the
 // game state machine (menu/playing/paused/victory/gameover), and the single
@@ -74,13 +84,24 @@ export class GameManager {
     this.cameraController = new CameraController(this.camera);
     this.ui = new UIManager(this.save, this.auth, this.i18n);
 
+    // ---- v1.1.0 Open World Hub (Feature 1) + Jobs/Traffic/Police (Features 2/3/5) ----
+    this.hub = new HubBuilder(this.scene, this.physics);
+    this.hubTriggers = new HubTriggerManager();
+    this.hubTraffic = new HubTrafficManager(this.scene, this.physics);
+    this.police = new PoliceManager(this.scene, this.physics);
+    this.jobs = new JobManager(this.save, this.parking, this.hub.group);
+    this._hubOrigin = false; // true when the current Academy/License/Shop screen (or the
+    // gameplay attempt started from it) was reached by driving to its hub landmark, so
+    // quitting/backing-out returns to the hub instead of the main menu.
+    this._preHubPauseState = 'playing'; // which state to resume into on Resume ('playing' or 'hub')
+
     this.carController = null;
     this.ghostCar = null;
     this.ghostPlayer = null;
     this.currentLevelId = 1;
     this.currentLevelConfig = null;
     this.state = 'menu';
-    this.mode = 'campaign'; // 'campaign' | 'academy' | 'license' — which config source _startWithConfig used
+    this.mode = 'campaign'; // 'campaign' | 'academy' | 'license' | 'hub' — which config source _startWithConfig used
     this.currentAcademyModuleId = null;
     this.currentAcademyStageIndex = 0;
     this.currentLicenseRouteId = null;
@@ -102,6 +123,7 @@ export class GameManager {
     this._wireUIEvents();
     this._wireParkingEvents();
     this._wireAchievementEvents();
+    this._wireHubEvents();
     window.addEventListener('resize', () => this._onResize());
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.pauseGame();
@@ -156,6 +178,73 @@ export class GameManager {
       this.ui.showScreen('auth');
     });
     this.ui.on('importSaveFile', (file) => this._handleImportSaveFile(file));
+    this.ui.on('enterHub', () => this.enterHub());
+    this.ui.on('jobAccept', () => this.jobs.acceptOffer(this.save.getProgression().level));
+    this.ui.on('jobDecline', () => this.jobs.declineOffer());
+    this.ui.on('backFromHubOrMenu', (fallback) => {
+      if (this._hubOrigin) this.enterHub();
+      else this.ui.showScreen(fallback);
+    });
+  }
+
+  // Wires the v1.1.0 hub subsystems (HubTriggerManager/JobManager/PoliceManager) to
+  // UI/save side effects — kept separate from _wireUIEvents/_wireParkingEvents since none
+  // of this fires outside `state === 'hub'`.
+  _wireHubEvents() {
+    this.hubTriggers.on('enterLandmark', (landmark) => this._handleHubLandmark(landmark));
+    this.hubTriggers.on('enterJobMarker', (marker) => this.jobs.onEnterMarker(marker, this.save.getProgression().level));
+    this.hubTriggers.on('exitJobMarker', () => this.jobs.onExitMarker());
+
+    this.jobs.on('offer', ({ job }) => this.ui.showJobOffer(job));
+    this.jobs.on('offerCancelled', () => this.ui.hideJobOffer());
+    this.jobs.on('started', () => {
+      this.ui.hideJobOffer();
+      this.audio.playSuccessChime();
+    });
+    this.jobs.on('progress', () => this.ui.showToast(this.i18n.t('jobs.arrivedPickup'), 'success'));
+    this.jobs.on('completed', ({ reward, reputation }) => {
+      this.audio.playSuccessChime();
+      this.effects.emitSuccessBurst(this.carController.state.x, this.carController.state.z);
+      this.ui.showToast(this.i18n.t('jobs.completedToast', reward.coins, reward.xp), 'success');
+      this._announceRankChange(reputation);
+    });
+    this.jobs.on('failed', ({ reputation }) => {
+      this.audio.playFailBuzz();
+      this.ui.showToast(this.i18n.t('jobs.failedToast'), 'warn');
+      this._announceRankChange(reputation);
+    });
+
+    this.police.on('warning', () => {
+      this._announceRankChange(this.save.addReputation(REPUTATION_DELTA.reckless));
+      this.ui.showToast(this.i18n.t('police.warningToast'), 'warn');
+    });
+    this.police.on('fine', ({ amount }) => {
+      const deduct = Math.min(this.save.getCoins(), amount);
+      if (deduct > 0) this.save.spendCoins(deduct);
+      this._announceRankChange(this.save.addReputation(REPUTATION_DELTA.policeFine));
+      this.ui.showToast(this.i18n.t('police.fineToast', deduct), 'warn');
+    });
+  }
+
+  _announceRankChange(reputation) {
+    if (reputation?.rankChanged) {
+      this.ui.showToast(this.i18n.t('reputation.rankUpToast', this.i18n.t(reputation.rank.label)), 'success');
+    }
+  }
+
+  // Driving into a landmark's trigger radius opens the same screen its main-menu button
+  // would (Academy list / License route list / Shop) — the hub is an alternate route to
+  // those screens, not a replacement, so nothing about them changes. `_hubOrigin` makes
+  // the eventual "back"/"quit" return to the hub instead of the main menu.
+  _handleHubLandmark(landmark) {
+    this._hubOrigin = true;
+    if (landmark.action === 'openAcademy') this.ui.showScreen('academy');
+    else if (landmark.action === 'openLicense') this.ui.showScreen('license-select');
+    else if (landmark.action === 'openShop') {
+      this.ui.populateShop();
+      this.ui.showScreen('shop');
+    }
+    this.state = 'hub-menu';
   }
 
   _handleImportSaveFile(file) {
@@ -169,8 +258,15 @@ export class GameManager {
   }
 
   _wireParkingEvents() {
-    this.parking.on('success', ({ accuracy }) => this._handleParkingSuccess(accuracy));
+    this.parking.on('success', ({ accuracy }) => {
+      if (this.state === 'hub' && this.jobs.activeJob) {
+        this.jobs.completeActiveParkingSuccess(accuracy);
+        return;
+      }
+      this._handleParkingSuccess(accuracy);
+    });
     this.parking.on('wrongSpot', () => {
+      if (this.state === 'hub') return; // a hub job only ever arms its single target spot
       this.score.registerWrongSpot();
       this.ui.showToast(this.i18n.t('toast.wrongSpot'), 'warn');
     });
@@ -315,17 +411,47 @@ export class GameManager {
     this._startWithConfig({ ...legCfg, timeLimit: route.totalTimeLimit }, { mode: 'license', hudLevel: 1, modeLabel });
   }
 
+  // Feature 1 (Open World Hub): builds the persistent hub scene and drops the player into
+  // free-roam driving — no timer, no win condition, just proximity triggers (landmarks,
+  // job markers) reusing the same car/camera/physics pipeline every other mode uses.
+  enterHub() {
+    this._flushSessionStats();
+    this._disposeGhost();
+    this.assist.setEnabled(false);
+    this.world.clear(); // any campaign/Academy/License scene still standing must not coexist with the hub
+    this.mode = 'hub';
+    this._hubOrigin = false;
+
+    this.hub.build();
+    this.hubTraffic.build();
+    this.police.build();
+    this.jobs.reset();
+    this.hubTriggers.reset();
+    this._spawnCar(HUB_CAR_START);
+    this.save.addVehicleUsage(this._pickVehiclePreset().id);
+    this._collisionCooldown = 0;
+    this._boundaryCooldown = 0;
+
+    this.state = 'hub';
+    this.ui.setHubMode(true);
+    this.ui.showScreen('hud');
+    this.save.recordLastPlayed({ mode: 'hub', cityLabel: getTheme(HUB_THEME_ID).label });
+  }
+
   // Shared tail for every "start a fresh timed attempt" entry point (campaign level, Academy
   // stage, or the first leg of a License route) — builds the world/car/parking/score exactly
   // once. Mid-route License leg advances reuse `_rebuildLicenseLeg` instead, since those must NOT
   // reset the route's shared timer/collision count.
   _startWithConfig(cfg, meta) {
     this._flushSessionStats();
+    this.hub.clear(); // no-op unless the hub was built earlier this session
+    this.ui.setHubMode(false);
     this.mode = meta.mode;
     const built = this._applyEventDecor(cfg);
     this.currentLevelConfig = built;
 
     const { theme } = this.world.build(built);
+    this.save.recordLastPlayed({ mode: meta.mode, cityLabel: theme.label });
     this.traffic.build(built, theme);
     this.parking.setSpots(built.spots);
     this.score.reset(built.timeLimit);
@@ -401,19 +527,21 @@ export class GameManager {
   }
 
   pauseGame() {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' && this.state !== 'hub') return;
     this._flushSessionStats();
+    this._preHubPauseState = this.state;
     this.state = 'paused';
     this.ui.showScreen('pause');
   }
 
   resumeGame() {
     if (this.state !== 'paused') return;
-    this.state = 'playing';
+    this.state = this._preHubPauseState;
     this.ui.showScreen('hud');
   }
 
   restartLevel() {
+    if (this.mode === 'hub') return; // no level to restart while free-roaming the hub
     this.save.addRestart();
     if (this.mode === 'academy') this.startAcademyModule(this.currentAcademyModuleId, this.currentAcademyStageIndex);
     else if (this.mode === 'license') this.startLicenseTest(this.currentLicenseRouteId);
@@ -440,10 +568,16 @@ export class GameManager {
   }
 
   quitToMenu() {
+    if (this._hubOrigin) {
+      this.enterHub();
+      return;
+    }
     this._flushSessionStats();
     this._disposeGhost();
     this.assist.setEnabled(false);
     if (this.carController) this.carController.object3D.visible = true;
+    this.hub.clear();
+    this.ui.setHubMode(false);
     this.state = 'menu';
     this.mode = 'campaign';
     this.ui.showScreen('main-menu');
@@ -451,12 +585,19 @@ export class GameManager {
 
   // Same cleanup as quitToMenu, but lands back on the Academy list — used by the Academy
   // Certificate screen's "Back to Academy" button and by _advanceAfterVictory when a module's
-  // final stage has just been completed.
+  // final stage has just been completed. Also hub-aware: if this Academy run was started by
+  // driving to the hub's Academy building, "Back to Academy" returns to the hub instead.
   quitToAcademy() {
+    if (this._hubOrigin) {
+      this.enterHub();
+      return;
+    }
     this._flushSessionStats();
     this._disposeGhost();
     this.assist.setEnabled(false);
     if (this.carController) this.carController.object3D.visible = true;
+    this.hub.clear();
+    this.ui.setHubMode(false);
     this.state = 'menu';
     this.mode = 'campaign';
     this.ui.showScreen('academy');
@@ -569,7 +710,11 @@ export class GameManager {
       this.score.timeRemaining > 0 &&
       this.score.collisions <= route.maxCollisions &&
       avgAccuracy >= route.minAccuracy;
-    this.save.recordLicenseRouteResult(this.currentLicenseRouteId, passed);
+    const { tierEarned } = this.save.recordLicenseRouteResult(this.currentLicenseRouteId, passed);
+    if (tierEarned) {
+      this._checkVehicleUnlocksForTier(tierEarned);
+      this.ui.showToast(this.i18n.t('license.tierEarnedToast', this.i18n.t(`license.tier.${tierEarned}`)), 'success');
+    }
     this.state = 'license-result';
     this.audio[passed ? 'playSuccessChime' : 'playFailBuzz']();
     this.ui.showToast(this.i18n.t(passed ? 'toast.licensePassed' : 'toast.licenseFailed'), passed ? 'success' : 'warn');
@@ -635,6 +780,17 @@ export class GameManager {
     const unlockedLevel = this.save.getUnlockedLevel();
     for (const preset of VEHICLE_PRESETS) {
       if (preset.unlockLevel <= unlockedLevel && this.save.unlockVehicle(preset.id)) {
+        this.save.setSelectedVehicle(preset.id);
+        this.ui.showToast(this.i18n.t('toast.newVehicleUnlocked', this.i18n.t(preset.name)), 'success');
+      }
+    }
+  }
+
+  // Mirrors _checkVehicleUnlocks' shape (Feature 6: Expanded License Program) — checked only
+  // when recordLicenseRouteResult reports a tier was just newly earned, not every frame.
+  _checkVehicleUnlocksForTier(tier) {
+    for (const preset of VEHICLE_PRESETS) {
+      if (preset.unlockLicenseTier === tier && this.save.unlockVehicle(preset.id)) {
         this.save.setSelectedVehicle(preset.id);
         this.ui.showToast(this.i18n.t('toast.newVehicleUnlocked', this.i18n.t(preset.name)), 'success');
       }
@@ -719,6 +875,8 @@ export class GameManager {
       }
     } else if (this.state === 'replay') {
       this._updateReplayPlayback(dt);
+    } else if (this.state === 'hub' || this.state === 'hub-menu') {
+      this._updateHub(dt, this.state === 'hub-menu');
     }
 
     if (this.state !== 'replay' && this.carController) {
@@ -726,7 +884,60 @@ export class GameManager {
     }
     this.effects.update(dt);
     this.world.update(dt);
+    this.hub.update(dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // Feature 1's free-roam driving loop: same input->physics->camera pipeline as `playing`,
+  // minus the timer/win-condition, plus the hub-only subsystems (Features 2/3/5). `menuOpen`
+  // is true while a hub-triggered Academy/License/Shop screen sits on top (see
+  // _handleHubLandmark) — the scene keeps rendering behind it but stops advancing so the car
+  // can't drift and job timers don't drain while the player is just browsing a menu.
+  _updateHub(dt, menuOpen) {
+    if (menuOpen) return;
+    if (this.input.state.pauseToggle) {
+      this.pauseGame();
+      return;
+    }
+    this._sessionPlayTime += dt;
+    if (this.input.state.cameraToggle) this.cameraController.cycle();
+
+    const result = this.carController.update(dt, this.input.state, { steerSensitivity: this.save.getSettings().sensitivity });
+    this._sessionDistance += Math.abs(this.carController.state.speed) * dt;
+
+    this._collisionCooldown = Math.max(0, this._collisionCooldown - dt);
+    if (result.collided && result.impact > COLLISION_IMPACT_THRESHOLD && this._collisionCooldown <= 0) {
+      this._collisionCooldown = COLLISION_TOAST_COOLDOWN;
+      this.save.addCollision();
+      this.police.registerCollision();
+      this.ui.showToast(this.i18n.t('toast.collision'), 'warn');
+    }
+
+    this._boundaryCooldown = Math.max(0, this._boundaryCooldown - dt);
+    if (result.outOfBounds && this._boundaryCooldown <= 0) {
+      this._boundaryCooldown = BOUNDARY_TOAST_COOLDOWN;
+      this.ui.showToast(this.i18n.t('toast.outOfBounds'), 'warn');
+    }
+
+    this.hubTriggers.update(this.carController.state);
+    this.hubTraffic.update(dt);
+    this.police.update(dt, this.carController.state);
+    this.jobs.update(dt);
+
+    const parkResult = this.parking.update(dt, this.carController.state);
+    this.ui.showParkingProgress(parkResult.progress);
+
+    const activeJob = this.jobs.activeJob;
+    this.ui.updateHubBar({
+      level: this.save.getProgression().level,
+      coins: this.save.getCoins(),
+      speedKmh: this.carController.getSpeedKmh(),
+      gear: this.carController.getGear(),
+      objective: activeJob ? this.i18n.t(JOB_TYPES[activeJob.type].descKey) : this.i18n.t('hub.freeRoam'),
+      timeRemaining: activeJob ? activeJob.timeRemaining : 0,
+      hasJob: !!activeJob,
+    });
+    this.ui.updateRankBadge(this.i18n.t(this.save.getReputation().rank.label));
   }
 
   // Beeps faster/higher-pitched as the nearest sensed obstacle gets closer, on a short cooldown

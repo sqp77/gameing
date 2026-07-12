@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <meta name="author" content="Saud Alqhtani (GitHub: sqp77)" />
-    <title>MASAR | مسار —</title>
+    <title>MASAR — Smart Driving &amp; Parking Simulator</title>
     <link rel="icon" href="/favicon.svg" />
   </head>
   <body>
@@ -105,11 +105,14 @@
 
       <!-- ===================== MAIN MENU ===================== -->
       <section id="screen-main-menu" class="screen">
-        <div class="menu-panel">
-          <h1 class="game-title">
-            <span class="title-ar">مسار</span><span class="title-sep">|</span
-            ><span class="title-en">MASAR</span>
-          </h1>
+        <div class="menu-panel wide">
+          <div class="menu-header">
+            <h1 class="game-title">
+              <span class="title-ar">مسار</span><span class="title-sep">|</span
+              ><span class="title-en">MASAR</span>
+            </h1>
+            <span class="menu-version-chip" data-i18n="common.version">v1.1.0</span>
+          </div>
           <p class="game-subtitle">
             <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
             <span class="subtitle-en"
@@ -117,50 +120,119 @@
             >
           </p>
 
-          <div id="account-bar" class="account-bar hidden">
-            <div class="account-avatar" id="account-avatar"></div>
-            <div class="account-info">
-              <div class="account-welcome" id="account-welcome" data-i18n="account.defaultWelcome">
-                Welcome, Driver
+          <div class="menu-profile-row">
+            <div id="account-bar" class="account-bar hidden">
+              <div class="account-avatar" id="account-avatar"></div>
+              <div class="account-info">
+                <div class="account-welcome" id="account-welcome" data-i18n="account.defaultWelcome">
+                  Welcome, Driver
+                </div>
+                <div class="account-substats" id="account-substats">
+                  0 coins · Level 1 · 0★
+                </div>
               </div>
-              <div class="account-substats" id="account-substats">
-                0 coins · Level 1 · 0★
+            </div>
+            <div id="menu-rank-badge" class="menu-rank-badge">Beginner Driver</div>
+          </div>
+
+          <div class="menu-buttons-grid">
+            <button id="btn-play" class="btn btn-primary btn-grid">
+              <span class="btn-icon" aria-hidden="true">▶</span><span class="btn-label" data-i18n="menu.play">Continue</span>
+            </button>
+            <button id="btn-enter-hub" class="btn btn-primary btn-grid">
+              <span class="btn-icon" aria-hidden="true">🗺</span><span class="btn-label" data-i18n="menu.openWorld">Free Drive</span>
+            </button>
+            <button id="btn-academy" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🎓</span><span class="btn-label" data-i18n="menu.academy">Driving Academy</span>
+            </button>
+            <button id="btn-license-test" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🪪</span><span class="btn-label" data-i18n="menu.licenseTest">License Test</span>
+            </button>
+            <button id="btn-shop" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🚗</span><span class="btn-label" data-i18n="menu.shop">Vehicles</span>
+            </button>
+            <button id="btn-achievements" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">🏆</span><span class="btn-label" data-i18n="menu.achievements">Achievements</span>
+            </button>
+            <button id="btn-progress" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">📊</span><span class="btn-label" data-i18n="menu.progress">Statistics</span>
+            </button>
+            <button id="btn-settings" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">⚙</span><span class="btn-label" data-i18n="menu.settings">Settings</span>
+            </button>
+            <button id="btn-credits" class="btn btn-grid">
+              <span class="btn-icon" aria-hidden="true">❓</span><span class="btn-label" data-i18n="menu.credits">About</span>
+            </button>
+            <button id="btn-exit" class="btn btn-grid btn-back">
+              <span class="btn-icon" aria-hidden="true">🚪</span><span class="btn-label" data-i18n="menu.exit">Exit</span>
+            </button>
+          </div>
+
+          <div class="menu-secondary-row">
+            <button id="btn-level-select" class="btn btn-pill" data-i18n="menu.levelSelect">Level Select</button>
+            <button id="btn-daily" class="btn btn-pill" data-i18n="menu.daily">Daily Challenges</button>
+          </div>
+
+          <button id="btn-quick-resume" class="quick-access-card" type="button">
+            <div class="quick-access-title" data-i18n="menu.quickAccess.title">Quick Access</div>
+            <div class="quick-access-grid">
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.lastMode">Last Played</label><span id="qa-last-mode">—</span>
               </div>
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.currentCity">Current City</label><span id="qa-city">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="progress.stat.currentVehicle">Current Vehicle</label><span id="qa-vehicle">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="menu.quickAccess.latestAchievement">Latest Achievement</label><span id="qa-achievement">—</span>
+              </div>
+              <div class="quick-access-item">
+                <label data-i18n="progress.stat.driverRank">Driver Rank</label><span id="qa-rank">—</span>
+              </div>
+            </div>
+            <div class="quick-access-hint" data-i18n="menu.quickAccess.resumeHint">Tap to resume</div>
+          </button>
+
+          <div class="progress-card">
+            <div class="progress-card-title" data-i18n="menu.progressCard.title">Your Progress</div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.levelsCompleted">Levels Completed</label>
+              <div class="overview-bar"><div id="pc-levels-fill" class="overview-fill"></div></div>
+              <span id="pc-levels-value">0 / 20</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="academy.title">MASAR Driving Academy</label>
+              <div class="overview-bar"><div id="pc-academy-fill" class="overview-fill"></div></div>
+              <span id="pc-academy-value">0%</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.licensesEarned">Licenses Earned</label>
+              <div class="overview-bar"><div id="pc-license-fill" class="overview-fill"></div></div>
+              <span id="pc-license-value">0 / 4</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.reputation">Reputation</label>
+              <div class="overview-bar"><div id="pc-reputation-fill" class="overview-fill"></div></div>
+              <span id="pc-reputation-value">0</span>
+            </div>
+            <div class="menu-progress-row">
+              <label data-i18n="progress.stat.vehiclesOwned">Vehicles Owned</label>
+              <div class="overview-bar"><div id="pc-vehicles-fill" class="overview-fill"></div></div>
+              <span id="pc-vehicles-value">0 / 9</span>
+            </div>
+            <div class="progress-card-coins">
+              <span data-i18n="progress.stat.coins">Coins</span>: <strong id="pc-coins">0</strong>
             </div>
           </div>
 
-          <div class="menu-buttons">
-            <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Play</button>
-            <button id="btn-level-select" class="btn" data-i18n="menu.levelSelect">Level Select</button>
-            <button id="btn-academy" class="btn" data-i18n="menu.academy">Driving Academy</button>
-            <button id="btn-license-test" class="btn" data-i18n="menu.licenseTest">Driving Test</button>
-            <button id="btn-progress" class="btn" data-i18n="menu.progress">Progress</button>
-            <button id="btn-shop" class="btn" data-i18n="menu.shop">Shop</button>
-            <button id="btn-daily" class="btn" data-i18n="menu.daily">Daily Challenges</button>
-            <button id="btn-achievements" class="btn" data-i18n="menu.achievements">Achievements</button>
-            <button id="btn-settings" class="btn" data-i18n="menu.settings">Settings</button>
-            <button id="btn-credits" class="btn" data-i18n="menu.credits">Credits</button>
-          </div>
           <div class="account-actions">
             <button id="btn-sign-in" class="btn hidden" data-i18n="menu.signIn">Sign In</button>
             <button id="btn-profile" class="btn hidden" data-i18n="menu.profile">Profile</button>
             <button id="btn-menu-logout" class="btn btn-back hidden" data-i18n="menu.logout">
               Logout
             </button>
-          </div>
-          <div id="menu-overview" class="menu-overview">
-            <div class="overview-bar">
-              <div id="overview-fill" class="overview-fill"></div>
-            </div>
-            <div class="overview-stats">
-              <span><span data-i18n="menu.overviewComplete">Complete: </span><strong id="overview-percent">0%</strong></span>
-              <span><span data-i18n="menu.overviewStars">Stars: </span><strong id="overview-stars">0 / 60</strong></span>
-              <span><span data-i18n="menu.overviewCoins">Coins: </span><strong id="overview-coins">0</strong></span>
-              <span
-                ><span data-i18n="menu.overviewVehicle">Vehicle: </span>
-                <strong id="overview-vehicle">City Hatchback</strong></span
-              >
-            </div>
           </div>
           <div class="menu-footer">
             <span data-i18n="menu.bestScorePrefix">Best Score: </span><span id="best-score-label">0</span>
@@ -300,73 +372,91 @@
 
       <!-- ===================== SETTINGS ===================== -->
       <section id="screen-settings" class="screen hidden">
-        <div class="menu-panel">
+        <div class="menu-panel wide">
           <h2 data-i18n="settings.title">Settings</h2>
-          <div class="settings-row">
-            <label data-i18n="settings.language">Language</label>
-            <select id="setting-language">
-              <option value="en" data-i18n="settings.langEnglish">English</option>
-              <option value="ar" data-i18n="settings.langArabic">Arabic</option>
-            </select>
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.volume">Master Volume</label>
-            <input
-              type="range"
-              id="setting-volume"
-              min="0"
-              max="100"
-              value="70"
-            />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.camera">Camera</label>
-            <select id="setting-camera">
-              <option value="third" data-i18n="settings.cameraThird">Third Person</option>
-              <option value="first" data-i18n="settings.cameraFirst">First Person</option>
-              <option value="top" data-i18n="settings.cameraTop">Top Down</option>
-              <option value="reverse" data-i18n="settings.cameraReverse">Reverse Camera</option>
-            </select>
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.sensitivity">Steering Sensitivity</label>
-            <input
-              type="range"
-              id="setting-sensitivity"
-              min="50"
-              max="150"
-              value="100"
-            />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.shadows">Shadows</label>
-            <input type="checkbox" id="setting-shadows" checked />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.ghostReplay">Ghost Replay</label>
-            <input type="checkbox" id="setting-ghost-replay" checked />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.assist">Parking Assist</label>
-            <input type="checkbox" id="setting-assist" checked />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.events">National Events</label>
-            <input type="checkbox" id="setting-events" checked />
-          </div>
-          <div class="settings-row">
-            <label data-i18n="settings.saveData">Save Data</label>
-            <div class="save-io-buttons">
-              <button id="btn-export-save" class="btn card-btn" data-i18n="settings.export">Export</button>
-              <button id="btn-import-save" class="btn card-btn" data-i18n="settings.import">Import</button>
-              <input
-                type="file"
-                id="input-import-save"
-                accept="application/json"
-                class="hidden"
-              />
+          <input
+            type="search"
+            id="setting-search"
+            class="settings-search"
+            data-i18n-placeholder="settings.search"
+            placeholder="Search settings…"
+          />
+
+          <div class="settings-group" data-group="general">
+            <div class="settings-group-title" data-i18n="settings.group.general">General</div>
+            <div class="settings-row" data-label="settings.ghostReplay">
+              <label data-i18n="settings.ghostReplay">Ghost Replay</label>
+              <input type="checkbox" id="setting-ghost-replay" checked />
+            </div>
+            <div class="settings-row" data-label="settings.events">
+              <label data-i18n="settings.events">National Events</label>
+              <input type="checkbox" id="setting-events" checked />
+            </div>
+            <div class="settings-row" data-label="settings.saveData">
+              <label data-i18n="settings.saveData">Save Data</label>
+              <div class="save-io-buttons">
+                <button id="btn-export-save" class="btn card-btn" data-i18n="settings.export">Export</button>
+                <button id="btn-import-save" class="btn card-btn" data-i18n="settings.import">Import</button>
+                <input
+                  type="file"
+                  id="input-import-save"
+                  accept="application/json"
+                  class="hidden"
+                />
+              </div>
             </div>
           </div>
+
+          <div class="settings-group" data-group="graphics">
+            <div class="settings-group-title" data-i18n="settings.group.graphics">Graphics</div>
+            <div class="settings-row" data-label="settings.shadows">
+              <label data-i18n="settings.shadows">Shadows</label>
+              <input type="checkbox" id="setting-shadows" checked />
+            </div>
+            <div class="settings-row" data-label="settings.camera">
+              <label data-i18n="settings.camera">Camera</label>
+              <select id="setting-camera">
+                <option value="third" data-i18n="settings.cameraThird">Third Person</option>
+                <option value="first" data-i18n="settings.cameraFirst">First Person</option>
+                <option value="top" data-i18n="settings.cameraTop">Top Down</option>
+                <option value="reverse" data-i18n="settings.cameraReverse">Reverse Camera</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="audio">
+            <div class="settings-group-title" data-i18n="settings.group.audio">Audio</div>
+            <div class="settings-row" data-label="settings.volume">
+              <label data-i18n="settings.volume">Master Volume</label>
+              <input type="range" id="setting-volume" min="0" max="100" value="70" />
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="language">
+            <div class="settings-group-title" data-i18n="settings.group.language">Language</div>
+            <div class="settings-row" data-label="settings.language">
+              <label data-i18n="settings.language">Language</label>
+              <select id="setting-language">
+                <option value="en" data-i18n="settings.langEnglish">English</option>
+                <option value="ar" data-i18n="settings.langArabic">Arabic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group" data-group="controls">
+            <div class="settings-group-title" data-i18n="settings.group.controls">Controls</div>
+            <div class="settings-row" data-label="settings.sensitivity">
+              <label data-i18n="settings.sensitivity">Steering Sensitivity</label>
+              <input type="range" id="setting-sensitivity" min="50" max="150" value="100" />
+            </div>
+            <div class="settings-row" data-label="settings.assist">
+              <label data-i18n="settings.assist">Parking Assist</label>
+              <input type="checkbox" id="setting-assist" checked />
+            </div>
+          </div>
+
+          <div id="settings-empty" class="settings-empty hidden" data-i18n="settings.noResults">No matching settings</div>
+
           <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
           <div class="ownership-footer" data-i18n="common.ownershipFooter">
             Created by Saud Alqhtani | GitHub: sqp77
@@ -418,6 +508,7 @@
               Smart Driving &amp; Parking Simulator — محاكي القيادة والاصطفاف
               الذكي
             </p>
+            <div class="credits-version-chip" data-i18n="common.version">v1.1.0</div>
             <p class="credits-line">
               Created by <strong>Saud Alqhtani</strong>
             </p>
@@ -431,7 +522,7 @@
               >
             </p>
           </div>
-          <button class="btn btn-back" data-back="main-menu">Back</button>
+          <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
         </div>
       </section>
 
@@ -442,6 +533,7 @@
           <div class="hud-chip hud-objective" id="hud-objective">
             Park in the marked spot
           </div>
+          <div id="hud-rank-badge" class="hud-chip hud-rank-badge hidden">Beginner Driver</div>
           <div class="hud-chip"><span data-i18n="hud.score">Score</span> <span id="hud-score">0</span></div>
           <div class="hud-chip" id="hud-timer">02:00</div>
           <button
@@ -507,6 +599,16 @@
         </div>
 
         <div id="toast-container" class="toast-container"></div>
+
+        <div id="hub-job-offer" class="hub-job-offer hidden">
+          <div class="hub-job-offer-title" id="hub-job-offer-title">Delivery Mission</div>
+          <div class="hub-job-offer-desc" id="hub-job-offer-desc"></div>
+          <div class="hub-job-offer-reward" id="hub-job-offer-reward"></div>
+          <div class="menu-buttons hub-job-offer-buttons">
+            <button id="btn-job-accept" class="btn btn-primary" data-i18n="jobs.accept">Accept</button>
+            <button id="btn-job-decline" class="btn btn-back" data-i18n="jobs.decline">Decline</button>
+          </div>
+        </div>
 
         <div id="level-intro-banner" class="level-intro-banner">
           <div class="level-intro-number">

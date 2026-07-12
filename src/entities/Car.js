@@ -105,6 +105,58 @@ export const VEHICLE_PRESETS = [
     accel: 14,
     handling: 1.1,
   },
+  // v1.1.0 Expanded License Program (Feature 6): 3 new vehicles gated by License Test tier
+  // instead of campaign level — `unlockLevel: Infinity` keeps them out of the campaign-progress
+  // unlock check entirely; GameManager#_checkVehicleUnlocks additionally checks
+  // `unlockLicenseTier` against SaveManager#isLicenseTierEarned.
+  {
+    id: 'taxi',
+    name: 'vehicle.taxi.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'intermediate',
+    cost: 500,
+    color: 0xffd23f,
+    length: 4.6,
+    width: 1.85,
+    height: 1.3,
+    wheelbase: 2.8,
+    track: 1.6,
+    maxSpeed: 30,
+    accel: 10,
+    handling: 1.05,
+  },
+  {
+    id: 'van',
+    name: 'vehicle.van.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'advanced',
+    cost: 800,
+    color: 0xe8e8e8,
+    length: 5.0,
+    width: 2.0,
+    height: 1.9,
+    wheelbase: 3.0,
+    track: 1.68,
+    maxSpeed: 26,
+    accel: 7,
+    handling: 0.8,
+  },
+  {
+    id: 'sportscar',
+    name: 'vehicle.sportscar.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'professional',
+    cost: 1500,
+    color: 0xff2d2d,
+    length: 4.2,
+    width: 1.95,
+    height: 1.05,
+    wheelbase: 2.6,
+    track: 1.65,
+    maxSpeed: 42,
+    accel: 16,
+    handling: 1.4,
+  },
 ];
 
 function buildWheel(radius, width) {
