@@ -42,7 +42,10 @@ export class ParkingManager extends EventEmitter {
     this.completed = false;
   }
 
-  update(dt, carState) {
+  // `toleranceMultiplier` (v1.2.0 Dynamic Weather, Hub-only) tightens the heading-match window
+  // and accuracy scoring in rain/fog/sandstorm — defaults to 1, so campaign/Academy/License
+  // (which never pass it) behave exactly as before.
+  update(dt, carState, toleranceMultiplier = 1) {
     if (this.completed) return { progress: 1, inSpot: null };
 
     const carBox = carOBBFromState(carState);
@@ -74,10 +77,11 @@ export class ParkingManager extends EventEmitter {
       return { progress: 0, inSpot: matched };
     }
 
+    const effectiveTolerance = matched.tolerance * toleranceMultiplier;
     const angleOk = matched.requireReverse
-      ? Math.abs(shortestAngleDelta(carState.yaw, matched.heading)) <= matched.tolerance
-      : Math.abs(shortestAngleDelta(carState.yaw, matched.heading)) <= matched.tolerance ||
-        Math.abs(shortestAngleDelta(carState.yaw, matched.heading + Math.PI)) <= matched.tolerance;
+      ? Math.abs(shortestAngleDelta(carState.yaw, matched.heading)) <= effectiveTolerance
+      : Math.abs(shortestAngleDelta(carState.yaw, matched.heading)) <= effectiveTolerance ||
+        Math.abs(shortestAngleDelta(carState.yaw, matched.heading + Math.PI)) <= effectiveTolerance;
     const speedOk = speed < SPEED_EPSILON;
 
     this.activeSpotId = matched.spotId;
@@ -85,7 +89,7 @@ export class ParkingManager extends EventEmitter {
       this.holdTimer += dt;
       if (this.holdTimer >= matched.holdTime) {
         this.completed = true;
-        const accuracy = this._computeAccuracy(carBox, matched, carState);
+        const accuracy = this._computeAccuracy(carBox, matched, carState, toleranceMultiplier);
         this.emit('success', { spot: matched, accuracy });
         return { progress: 1, inSpot: matched, angleOk, speedOk };
       }
@@ -96,7 +100,7 @@ export class ParkingManager extends EventEmitter {
     return { progress: clamp(this.holdTimer / matched.holdTime, 0, 1), inSpot: matched, angleOk, speedOk };
   }
 
-  _computeAccuracy(carBox, spot, carState) {
+  _computeAccuracy(carBox, spot, carState, toleranceMultiplier = 1) {
     const dx = carBox.x - spot.x;
     const dz = carBox.z - spot.z;
     const cos = Math.cos(spot.angle);
@@ -108,7 +112,7 @@ export class ParkingManager extends EventEmitter {
       Math.abs(shortestAngleDelta(carState.yaw, spot.heading)),
       Math.abs(shortestAngleDelta(carState.yaw, spot.heading + Math.PI))
     );
-    const angleScore = 1 - clamp(angleDelta / spot.tolerance, 0, 1);
+    const angleScore = 1 - clamp(angleDelta / (spot.tolerance * toleranceMultiplier), 0, 1);
     return clamp(centering * 0.6 + angleScore * 0.4, 0, 1);
   }
 }

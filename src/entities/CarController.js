@@ -31,8 +31,16 @@ export class CarController {
     this._pitch = 0;
     this._wheelSpin = 0;
     this._lastSpeed = 0;
+    this._lastGear = 'D';
+    this._reverseBeepCooldown = 0;
+    this._lastHandbrake = false;
 
     for (const spot of this.model.headlightSpots) spot.intensity = 25;
+
+    if (this.audio) {
+      this.audio.setVehicleProfile(preset.category || 'sedan');
+      this.audio.playEngineStart();
+    }
   }
 
   get object3D() {
@@ -52,6 +60,13 @@ export class CarController {
 
   getGear() {
     return this.state.speed < -0.05 ? 'R' : 'D';
+  }
+
+  // Day/Night Cycle (Hub only, v1.2.0) — GameManager calls this once per hub-loop frame with
+  // HubBuilder.getHeadlightFactor() (0 by day, 1 by night); campaign/Academy/License never call
+  // this, so their headlights stay at the original always-on intensity set in the constructor.
+  setHeadlights(factor) {
+    for (const spot of this.model.headlightSpots) spot.intensity = 25 * factor;
   }
 
   update(dt, input, options = {}) {
@@ -88,6 +103,23 @@ export class CarController {
     if (input.handbrake && Math.abs(speed) > 2) {
       this.audio.playBrakeScreech(clamp(Math.abs(speed) / 8, 0.2, 1));
     }
+
+    // Reverse beep: one discrete double-beep on the D->R transition, not a continuous tone
+    // while reversing — cooldown guards against rapid re-triggering from speed jitter near 0.
+    this._reverseBeepCooldown = Math.max(0, this._reverseBeepCooldown - dt);
+    const gear = this.getGear();
+    if (gear !== this._lastGear) {
+      if (gear === 'R' && this._reverseBeepCooldown <= 0) {
+        this.audio.playReverseBeep();
+        this._reverseBeepCooldown = 1.2;
+      }
+      this._lastGear = gear;
+    }
+
+    // Handbrake engage click: fires once on key-down edge, independent of the continuous
+    // slide screech above (which only plays while actually sliding at speed).
+    if (input.handbrake && !this._lastHandbrake) this.audio.playHandbrakeEngage();
+    this._lastHandbrake = input.handbrake;
 
     if (this.effects && this.state.handbrakeSlip > 0.15) {
       const forward = { x: Math.cos(yaw), z: Math.sin(yaw) };

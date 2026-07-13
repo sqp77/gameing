@@ -142,7 +142,7 @@ export class HubTrafficManager {
   }
 
   _spawnPedestrian(rng, path) {
-    const model = createPedestrianModel();
+    const model = createPedestrianModel(path.role);
     this.group.add(model);
     const collider = this.physics.addCollider({ x: path.from.x, z: path.from.z, halfWidth: 0.3, halfDepth: 0.3, angle: 0 }, 'pedestrian');
     this.pedestrians.push({ model, collider, from: path.from, to: path.to, phase: rng() * 10 });

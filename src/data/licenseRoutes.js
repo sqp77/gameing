@@ -20,7 +20,11 @@ import { perpendicularStage, parallelStage } from './academyLevels.js';
 // three new tiers above it, each 3 routes tougher than the last (tighter tolerance, fewer
 // allowed collisions, higher minimum accuracy, shorter time limits), gated in sequence via
 // SaveManager#isLicenseTierUnlocked. `LICENSE_TIER_IDS` order is the gating order.
-export const LICENSE_TIER_IDS = ['beginner', 'intermediate', 'advanced', 'professional'];
+//
+// v1.2.0 Advanced Driving License Program: a 5th "master" tier above `professional` — same
+// gating mechanism (SaveManager#isLicenseTierUnlocked/isLicenseTierEarned are already generic
+// over array position, so no SaveManager changes were needed), tougher again on every axis.
+export const LICENSE_TIER_IDS = ['beginner', 'intermediate', 'advanced', 'professional', 'master'];
 
 export const LICENSE_ROUTES = [
   {
@@ -309,6 +313,81 @@ export const LICENSE_ROUTES = [
           tolerance: degToRad(4),
           extraCone: true,
           decoys: 2,
+          signIds: ['caution', 'noParking'],
+        }),
+    ],
+  },
+  {
+    id: 'route13',
+    tier: 'master',
+    totalTimeLimit: 85,
+    maxCollisions: 0,
+    minAccuracy: 0.96,
+    legs: [
+      () => perpendicularStage({ seed: 6330, theme: 'riyadh', width: 1.85, depth: 4.1, gap: 0.14, time: 0, tolerance: degToRad(4), decoys: 2, signIds: ['parking', 'caution'] }),
+      () => parallelStage({ seed: 6331, theme: 'riyadh', width: 1.8, depth: 4.2, gap: 0.13, time: 0, tolerance: degToRad(4), signIds: ['noParking', 'oneWay'] }),
+      () =>
+        perpendicularStage({
+          seed: 6332,
+          theme: 'riyadh',
+          width: 1.75,
+          depth: 4.0,
+          gap: 0.12,
+          time: 0,
+          requireReverse: true,
+          tolerance: degToRad(3),
+          extraCone: true,
+          decoys: 2,
+          signIds: ['caution', 'noParking'],
+        }),
+    ],
+  },
+  {
+    id: 'route14',
+    tier: 'master',
+    totalTimeLimit: 80,
+    maxCollisions: 0,
+    minAccuracy: 0.97,
+    legs: [
+      () => perpendicularStage({ seed: 6340, theme: 'alula', width: 1.8, depth: 4.0, gap: 0.13, time: 0, tolerance: degToRad(3), decoys: 3, signIds: ['noParking', 'parking'] }),
+      () => parallelStage({ seed: 6341, theme: 'alula', width: 1.75, depth: 4.1, gap: 0.12, time: 0, tolerance: degToRad(3), signIds: ['oneWay', 'noParking'] }),
+      () =>
+        perpendicularStage({
+          seed: 6342,
+          theme: 'alula',
+          width: 1.7,
+          depth: 3.9,
+          gap: 0.11,
+          time: 0,
+          requireReverse: true,
+          tolerance: degToRad(3),
+          extraCone: true,
+          decoys: 2,
+          signIds: ['caution', 'noParking'],
+        }),
+    ],
+  },
+  {
+    id: 'route15',
+    tier: 'master',
+    totalTimeLimit: 75,
+    maxCollisions: 0,
+    minAccuracy: 0.98,
+    legs: [
+      () => perpendicularStage({ seed: 6350, theme: 'jeddah', width: 1.75, depth: 3.9, gap: 0.12, time: 0, tolerance: degToRad(3), decoys: 3, signIds: ['parking', 'caution'] }),
+      () => parallelStage({ seed: 6351, theme: 'jeddah', width: 1.7, depth: 4.0, gap: 0.11, time: 0, tolerance: degToRad(3), signIds: ['noParking', 'oneWay'] }),
+      () =>
+        perpendicularStage({
+          seed: 6352,
+          theme: 'jeddah',
+          width: 1.65,
+          depth: 3.8,
+          gap: 0.1,
+          time: 0,
+          requireReverse: true,
+          tolerance: degToRad(3),
+          extraCone: true,
+          decoys: 3,
           signIds: ['caution', 'noParking'],
         }),
     ],

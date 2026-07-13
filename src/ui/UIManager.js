@@ -17,18 +17,20 @@ import { LICENSE_ROUTES, LICENSE_TIER_IDS } from '../data/licenseRoutes.js';
 import { getActiveEvent } from '../systems/EventManager.js';
 import { JOB_TYPES } from '../data/jobs.js';
 import { rankProgress } from '../utils/reputation.js';
+import { ShopPreview } from './ShopPreview.js';
 
 const SCREEN_SUFFIXES = [
   'auth', 'main-menu', 'level-select', 'achievements', 'settings', 'credits', 'progress', 'shop', 'daily', 'profile',
   'academy', 'academy-certificate', 'license-select', 'license-result',
-  'hud', 'pause', 'victory', 'gameover', 'restart-confirm', 'replay',
+  'hud', 'pause', 'victory', 'gameover', 'restart-confirm', 'replay', 'photo',
 ];
 const ELEMENT_IDS = [
   'loading-screen',
   'screen-auth', 'screen-main-menu', 'screen-level-select', 'screen-achievements', 'screen-settings', 'screen-credits', 'screen-progress',
   'screen-shop', 'screen-daily', 'screen-profile',
   'screen-academy', 'screen-academy-certificate', 'screen-license-select', 'screen-license-result',
-  'screen-hud', 'screen-pause', 'screen-victory', 'screen-gameover', 'screen-restart-confirm', 'screen-replay',
+  'screen-hud', 'screen-pause', 'screen-victory', 'screen-gameover', 'screen-restart-confirm', 'screen-replay', 'screen-photo',
+  'btn-photo-mode', 'btn-photo-screenshot', 'btn-photo-exit',
   'btn-play', 'btn-level-select', 'btn-achievements', 'btn-settings', 'btn-credits', 'btn-progress', 'best-score-label',
   'btn-shop', 'btn-daily', 'shop-grid', 'shop-coins', 'daily-grid',
   'btn-academy', 'btn-license-test', 'academy-grid', 'license-grid',
@@ -45,6 +47,7 @@ const ELEMENT_IDS = [
   'level-grid',
   'achievements-grid', 'achievements-summary',
   'setting-volume', 'setting-camera', 'setting-sensitivity', 'setting-shadows', 'setting-ghost-replay', 'setting-assist',
+  'setting-day-night', 'setting-weather',
   'setting-language', 'setting-events',
   'hud-level', 'hud-objective', 'hud-score', 'hud-timer', 'btn-pause', 'btn-hud-restart', 'hud-speed', 'hud-gear',
   'btn-camera-toggle', 'mobile-controls',
@@ -58,7 +61,8 @@ const ELEMENT_IDS = [
   'gameover-reason', 'btn-gameover-retry', 'btn-gameover-menu',
   'btn-restart-confirm', 'btn-restart-cancel',
   'btn-stop-replay', 'replay-label',
-  'progress-stats', 'progress-level-list', 'progress-achievements',
+  'progress-stats', 'progress-level-list', 'progress-achievements', 'progress-leaderboard-list',
+  'shop-preview-canvas', 'showroom-spec-name', 'showroom-spec-speed', 'showroom-spec-accel', 'showroom-spec-handling',
   'btn-enter-hub', 'hud-rank-badge',
   'hub-job-offer', 'hub-job-offer-title', 'hub-job-offer-desc', 'hub-job-offer-reward', 'btn-job-accept', 'btn-job-decline',
   'btn-exit', 'menu-rank-badge',
@@ -67,6 +71,7 @@ const ELEMENT_IDS = [
   'pc-license-fill', 'pc-license-value', 'pc-reputation-fill', 'pc-reputation-value',
   'pc-vehicles-fill', 'pc-vehicles-value', 'pc-coins',
   'setting-search', 'settings-empty',
+  'profile-violations-total', 'profile-violations-list',
 ];
 
 // Screens reachable both from the main menu and by driving to their hub landmark
@@ -119,6 +124,7 @@ export class UIManager extends EventEmitter {
     this._activeScreen = 'auth';
     this.el = {};
     for (const id of ELEMENT_IDS) this.el[id] = document.getElementById(id);
+    this.shopPreview = new ShopPreview(this.el['shop-preview-canvas']);
     this._wireButtons();
     this._applySettingsToInputs();
   }
@@ -182,6 +188,9 @@ export class UIManager extends EventEmitter {
       this.showScreen('settings');
     });
     this.el['btn-quit'].addEventListener('click', () => this.emit('quit'));
+    this.el['btn-photo-mode'].addEventListener('click', () => this.emit('enterPhotoMode'));
+    this.el['btn-photo-screenshot'].addEventListener('click', () => this.emit('photoScreenshot'));
+    this.el['btn-photo-exit'].addEventListener('click', () => this.emit('photoExit'));
 
     this.el['btn-next-level'].addEventListener('click', () => this.emit('nextLevel'));
     this.el['btn-retry'].addEventListener('click', () => this.emit('restart'));
@@ -198,6 +207,8 @@ export class UIManager extends EventEmitter {
     this.el['setting-camera'].addEventListener('change', (e) => this.emit('settingsChange', { camera: e.target.value }));
     this.el['setting-sensitivity'].addEventListener('input', (e) => this.emit('settingsChange', { sensitivity: Number(e.target.value) / 100 }));
     this.el['setting-shadows'].addEventListener('change', (e) => this.emit('settingsChange', { shadows: e.target.checked }));
+    this.el['setting-day-night'].addEventListener('change', (e) => this.emit('settingsChange', { dayNightEnabled: e.target.checked }));
+    this.el['setting-weather'].addEventListener('change', (e) => this.emit('settingsChange', { weatherEnabled: e.target.checked }));
     this.el['setting-ghost-replay'].addEventListener('change', (e) => this.emit('settingsChange', { ghostReplay: e.target.checked }));
     this.el['setting-assist'].addEventListener('change', (e) => this.emit('settingsChange', { assist: e.target.checked }));
     this.el['setting-language'].addEventListener('change', (e) => this.emit('settingsChange', { language: e.target.value }));
@@ -319,6 +330,30 @@ export class UIManager extends EventEmitter {
     const license = this.save.getLicenseStatus();
     this.el['profile-license-badge'].textContent = this.t(license.earned ? 'profile.licensed' : 'profile.notLicensed');
     this.el['profile-license-badge'].classList.toggle('earned', license.earned);
+    this._renderViolationHistory();
+  }
+
+  // Traffic Police violation history (v1.2.0) — reuses the same .progress-row list styling
+  // already established for the Statistics screen's level-record rows.
+  _renderViolationHistory() {
+    const { total, history } = this.save.getViolations();
+    this.el['profile-violations-total'].textContent = total;
+    const listEl = this.el['profile-violations-list'];
+    listEl.innerHTML = '';
+    if (history.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'progress-empty';
+      empty.textContent = this.t('profile.violationHistory.empty');
+      listEl.appendChild(empty);
+      return;
+    }
+    for (const entry of history) {
+      const row = document.createElement('div');
+      row.className = 'progress-row';
+      const when = new Date(entry.at).toLocaleString();
+      row.innerHTML = `<span class="progress-row-level">${this.t(`police.violation.${entry.kind}`)}</span><span class="progress-row-timestamp">${when}</span>`;
+      listEl.appendChild(row);
+    }
   }
 
   // Shows/hides the main-menu account bar and Profile/Logout/Sign-In buttons based on login
@@ -346,6 +381,8 @@ export class UIManager extends EventEmitter {
     this.el['setting-assist'].checked = s.assist;
     this.el['setting-sensitivity'].value = Math.round(s.sensitivity * 100);
     this.el['setting-shadows'].checked = s.shadows;
+    this.el['setting-day-night'].checked = s.dayNightEnabled;
+    this.el['setting-weather'].checked = s.weatherEnabled;
     this.el['setting-language'].value = s.language;
     this.el['setting-events'].checked = s.eventsEnabled;
     this.el['best-score-label'].textContent = this.save.getOverallBestScore();
@@ -362,6 +399,10 @@ export class UIManager extends EventEmitter {
     if (name === 'profile') this.populateProfile();
     if (name === 'academy') this.populateAcademy();
     if (name === 'license-select') this.populateLicenseSelect();
+    // Vehicle Showroom (v1.2.0): the preview's render loop only runs while Shop is the visible
+    // screen — zero cost the rest of the time, including during actual driving.
+    if (name === 'shop') this.shopPreview.start();
+    else this.shopPreview.stop();
   }
 
   // Re-renders whatever's on screen in the new language — called once by GameManager whenever
@@ -578,6 +619,14 @@ export class UIManager extends EventEmitter {
           <div class="achievement-name">${this.t(v.name)}${isSelected ? this.t('shop.selectedSuffix') : ''}</div>
           <div class="achievement-desc">${unlocked ? this.t('shop.owned') : `${v.cost}${this.t('common.coinsSuffix')}`}</div>
         </div>`;
+      // Vehicle Showroom (v1.2.0): every card gets a Preview button (works regardless of
+      // ownership, so browsing/comparing never requires buying first) alongside the existing
+      // Buy/Use flow, which is untouched.
+      const previewBtn = document.createElement('button');
+      previewBtn.className = 'btn card-btn';
+      previewBtn.textContent = this.t('shop.preview');
+      previewBtn.addEventListener('click', () => this._showVehiclePreview(v));
+      card.appendChild(previewBtn);
       if (!unlocked || !isSelected) {
         const btn = document.createElement('button');
         btn.className = 'btn card-btn';
@@ -587,6 +636,18 @@ export class UIManager extends EventEmitter {
       }
       grid.appendChild(card);
     }
+    const current = VEHICLE_PRESETS.find((v) => v.id === selected) || VEHICLE_PRESETS[0];
+    this._showVehiclePreview(current);
+  }
+
+  // Vehicle Showroom (v1.2.0): rotating 3D preview + spec readout for whichever vehicle was
+  // last clicked (Preview button) or the currently-selected one by default.
+  _showVehiclePreview(preset) {
+    this.shopPreview.showVehicle(preset);
+    this.el['showroom-spec-name'].textContent = this.t(preset.name);
+    this.el['showroom-spec-speed'].textContent = `${preset.maxSpeed} km/h`;
+    this.el['showroom-spec-accel'].textContent = preset.accel.toFixed(1);
+    this.el['showroom-spec-handling'].textContent = preset.handling.toFixed(2);
   }
 
   // Compact daily-challenge list: reuses achievement-card's locked/unlocked styling as
@@ -820,6 +881,8 @@ export class UIManager extends EventEmitter {
       [this.t('progress.stat.vehiclesOwned'), this.save.getVehicleCount()],
       [this.t('progress.stat.licensesEarned'), `${this.save.getEarnedLicenseTierCount()} / ${LICENSE_TIER_IDS.length}`],
       [this.t('progress.stat.missionsCompleted'), jobStats.total],
+      [this.t('progress.stat.violations'), this.save.getViolations().total],
+      [this.t('progress.stat.achievementsUnlocked'), `${ACHIEVEMENTS.filter((def) => this.save.isAchievementUnlocked(def.id)).length} / ${ACHIEVEMENTS.length}`],
       [this.t('progress.stat.currentLevel'), this.save.getLastPlayedLevel()],
       [this.t('progress.stat.highestUnlocked'), this.save.getUnlockedLevel()],
       [this.t('progress.stat.levelsCompleted'), `${totals.levelsCompleted} / ${LEVEL_COUNT}`],
@@ -891,6 +954,38 @@ export class UIManager extends EventEmitter {
           </div>`;
         recentEl.appendChild(card);
       }
+    }
+
+    this._renderLeaderboard();
+  }
+
+  // Local Leaderboard (v1.2.0 Online Leaderboard-Ready architecture) — reads SaveManager's
+  // capped top-10 tables directly (same as this screen already does for jobStats/achievements),
+  // showing each category's #1 local entry. Ready to swap for LeaderboardManager.fetchGlobalTop()
+  // once a backend exists — this rendering code wouldn't need to change, only the data source.
+  _renderLeaderboard() {
+    const categories = [
+      { id: 'bestAccuracy', label: 'progress.leaderboard.bestAccuracy', format: (v) => `${Math.round(v * 100)}%` },
+      { id: 'fastestCompletion', label: 'progress.leaderboard.fastestCompletion', format: (v) => formatClock(v) },
+      { id: 'reputation', label: 'progress.leaderboard.reputation', format: (v) => Math.round(v) },
+    ];
+    const listEl = this.el['progress-leaderboard-list'];
+    listEl.innerHTML = '';
+    let anyScores = false;
+    for (const cat of categories) {
+      const top = this.save.getLeaderboardTop(cat.id);
+      const row = document.createElement('div');
+      row.className = 'progress-row';
+      const best = top[0];
+      if (best) anyScores = true;
+      row.innerHTML = `<span class="progress-row-level">${this.t(cat.label)}</span><span class="progress-row-locked">${best ? cat.format(best.value) : '—'}</span>`;
+      listEl.appendChild(row);
+    }
+    if (!anyScores) {
+      const empty = document.createElement('div');
+      empty.className = 'progress-empty';
+      empty.textContent = this.t('progress.leaderboard.empty');
+      listEl.appendChild(empty);
     }
   }
 

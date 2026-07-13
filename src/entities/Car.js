@@ -58,6 +58,7 @@ export const VEHICLE_PRESETS = [
     maxSpeed: 28,
     accel: 8,
     handling: 0.85,
+    category: 'suv',
   },
   {
     id: 'coupe',
@@ -89,6 +90,7 @@ export const VEHICLE_PRESETS = [
     accel: 7.5,
     handling: 0.8,
     bodyStyle: 'pickup',
+    category: 'pickup',
   },
   {
     id: 'ev',
@@ -104,6 +106,7 @@ export const VEHICLE_PRESETS = [
     maxSpeed: 34,
     accel: 14,
     handling: 1.1,
+    category: 'ev',
   },
   // v1.1.0 Expanded License Program (Feature 6): 3 new vehicles gated by License Test tier
   // instead of campaign level — `unlockLevel: Infinity` keeps them out of the campaign-progress
@@ -140,6 +143,7 @@ export const VEHICLE_PRESETS = [
     maxSpeed: 26,
     accel: 7,
     handling: 0.8,
+    category: 'suv',
   },
   {
     id: 'sportscar',
@@ -156,6 +160,25 @@ export const VEHICLE_PRESETS = [
     maxSpeed: 42,
     accel: 16,
     handling: 1.4,
+  },
+  // v1.2.0 Advanced Driving License Program (Phase 2): exclusive to the new "master" tier —
+  // same unlockLevel:Infinity + unlockLicenseTier pattern as taxi/van/sportscar above, so
+  // GameManager's existing _checkVehicleUnlocksForTier needs no changes.
+  {
+    id: 'hypercar',
+    name: 'vehicle.hypercar.name',
+    unlockLevel: Infinity,
+    unlockLicenseTier: 'master',
+    cost: 2000,
+    color: 0xf5f5f5,
+    length: 4.35,
+    width: 2.0,
+    height: 1.0,
+    wheelbase: 2.68,
+    track: 1.7,
+    maxSpeed: 46,
+    accel: 18,
+    handling: 1.5,
   },
 ];
 

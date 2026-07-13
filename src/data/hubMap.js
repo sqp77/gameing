@@ -82,10 +82,13 @@ export const HUB_PATROL_ROUTE = HUB_LANE_LOOP;
 
 // Short back-and-forth sidewalk segments for ambient pedestrians (Dynamic City Life) —
 // reuses the same two-point ping-pong walker as the campaign TrafficManager's pedestrians.
+// v1.2.0: the two paths that already sit at a landmark's edge are tagged with a `role` so
+// HubTrafficManager spawns a recolored variant (see entities/Pedestrian.js) there instead of a
+// plain civilian — paths without `role` are unaffected (still the default civilian look).
 export const HUB_PEDESTRIAN_PATHS = [
-  { from: { x: -47, z: -40 }, to: { x: -33, z: -40 } },
+  { from: { x: -47, z: -40 }, to: { x: -33, z: -40 }, role: 'trainee' }, // academy edge
   { from: { x: 33, z: -40 }, to: { x: 47, z: -40 } },
-  { from: { x: -47, z: 40 }, to: { x: -33, z: 40 } },
+  { from: { x: -47, z: 40 }, to: { x: -33, z: 40 }, role: 'attendant' }, // dealership edge
   { from: { x: -10, z: 4 }, to: { x: 10, z: 4 } },
 ];
 

@@ -118,6 +118,10 @@ export const STRINGS = {
   'shop.use': { en: 'Use', ar: 'استخدام' },
   'shop.buy': { en: 'Buy', ar: 'شراء' },
   'shop.selectedSuffix': { en: ' (Selected)', ar: ' (محددة)' },
+  'shop.preview': { en: 'Preview', ar: 'معاينة' },
+  'shop.spec.topSpeed': { en: 'Top Speed', ar: 'السرعة القصوى' },
+  'shop.spec.acceleration': { en: 'Acceleration', ar: 'التسارع' },
+  'shop.spec.handling': { en: 'Handling', ar: 'مقود التحكم' },
 
   // ---- Daily challenges ----
   'daily.title': { en: 'Daily Challenges', ar: 'التحديات اليومية' },
@@ -146,6 +150,9 @@ export const STRINGS = {
   'settings.cameraFirst': { en: 'First Person', ar: 'منظور المتكلم' },
   'settings.cameraTop': { en: 'Top Down', ar: 'منظور علوي' },
   'settings.cameraReverse': { en: 'Reverse Camera', ar: 'كاميرا الرجوع' },
+  'settings.cameraCinematic': { en: 'Cinematic', ar: 'سينمائية' },
+  'settings.dayNight': { en: 'Day/Night Cycle', ar: 'دورة الليل والنهار' },
+  'settings.weather': { en: 'Dynamic Weather', ar: 'الطقس الديناميكي' },
   'settings.sensitivity': { en: 'Steering Sensitivity', ar: 'حساسية التوجيه' },
   'settings.shadows': { en: 'Shadows', ar: 'الظلال' },
   'settings.ghostReplay': { en: 'Ghost Replay', ar: 'إعادة تشغيل الشبح' },
@@ -168,6 +175,9 @@ export const STRINGS = {
   'profile.license': { en: 'MASAR License', ar: 'رخصة مسار' },
   'profile.licensed': { en: 'Licensed Driver', ar: 'سائق مرخّص' },
   'profile.notLicensed': { en: 'Not Licensed Yet', ar: 'لم يحصل على الرخصة بعد' },
+  'profile.violationHistory.title': { en: 'Violation History', ar: 'سجل المخالفات' },
+  'profile.violationHistory.totalPrefix': { en: 'Total violations: ', ar: 'إجمالي المخالفات: ' },
+  'profile.violationHistory.empty': { en: 'Clean record — no violations yet', ar: 'سجل نظيف — لا توجد مخالفات بعد' },
 
   // ---- Credits ----
   'credits.title': { en: 'Credits', ar: 'صنّاع اللعبة' },
@@ -201,6 +211,10 @@ export const STRINGS = {
   'pause.resume': { en: 'Resume', ar: 'استئناف' },
   'pause.restart': { en: 'Restart Level', ar: 'إعادة المستوى' },
   'pause.quit': { en: 'Quit to Menu', ar: 'الخروج للقائمة' },
+  'pause.photoMode': { en: 'Photo Mode', ar: 'وضع التصوير' },
+  'photoMode.hint': { en: 'Drag to orbit · Scroll to zoom', ar: 'اسحب للدوران · مرر للتكبير' },
+  'photoMode.screenshot': { en: 'Screenshot', ar: 'لقطة شاشة' },
+  'photoMode.exit': { en: 'Exit', ar: 'خروج' },
   'restartConfirm.title': { en: 'Restart Level?', ar: 'إعادة المستوى؟' },
   'restartConfirm.body': {
     en: 'Your current timer, score, and collisions for this attempt will be reset.',
@@ -272,6 +286,12 @@ export const STRINGS = {
   'achievement.vehicle_collector.desc': { en: 'Unlock every vehicle.', ar: 'افتح جميع المركبات.' },
   'achievement.combo_master.name': { en: 'Combo Master', ar: 'سيد التوافق' },
   'achievement.combo_master.desc': { en: 'Earn multiple achievements in a single run.', ar: 'احصل على عدة إنجازات في محاولة واحدة.' },
+  'achievement.event_nationalDay.name': { en: 'National Day Driver', ar: 'سائق اليوم الوطني' },
+  'achievement.event_nationalDay.desc': { en: 'Complete a level during Saudi National Day.', ar: 'أكمل مستوى خلال اليوم الوطني السعودي.' },
+  'achievement.event_foundingDay.name': { en: 'Founding Day Driver', ar: 'سائق يوم التأسيس' },
+  'achievement.event_foundingDay.desc': { en: 'Complete a level during Founding Day.', ar: 'أكمل مستوى خلال يوم التأسيس.' },
+  'achievement.event_riyadhSeason.name': { en: 'Riyadh Season Driver', ar: 'سائق موسم الرياض' },
+  'achievement.event_riyadhSeason.desc': { en: 'Complete a level during Riyadh Season.', ar: 'أكمل مستوى خلال موسم الرياض.' },
 
   // ---- Vehicles ----
   'vehicle.hatchback.name': { en: 'City Hatchback', ar: 'هاتشباك المدينة' },
@@ -338,7 +358,7 @@ export const STRINGS = {
   'hub.academy.desc': { en: 'Driving Academy training modules', ar: 'وحدات تدريب أكاديمية القيادة' },
   'hub.license.desc': { en: 'MASAR Driving License Test', ar: 'اختبار رخصة قيادة مسار' },
   'hub.shop.desc': { en: 'Buy and select vehicles', ar: 'شراء واختيار المركبات' },
-  'common.version': { en: 'v1.1.0', ar: 'الإصدار 1.1.0' },
+  'common.version': { en: 'v1.2.0', ar: 'الإصدار 1.2.0' },
   'common.appTitle': { en: 'MASAR — Smart Driving & Parking Simulator', ar: 'مسار — محاكي القيادة والاصطفاف الذكي' },
 
   // ---- v1.1.0: Job System (Feature 2) ----
@@ -367,12 +387,17 @@ export const STRINGS = {
   // ---- v1.1.0: Traffic Police (Feature 5) ----
   'police.warningToast': { en: 'Police warning: drive safely', ar: 'تحذير من الشرطة: قد بأمان' },
   'police.fineToast': { en: 'Fined by traffic police: -{0} coins', ar: 'غرامة من شرطة المرور: -{0} عملة' },
+  'police.violation.speeding': { en: 'Speeding', ar: 'تجاوز السرعة' },
+  'police.violation.collision': { en: 'Collision', ar: 'اصطدام' },
+  'police.violation.redLight': { en: 'Running a Red Light', ar: 'تجاوز إشارة حمراء' },
+  'police.violation.wrongSide': { en: 'Wrong-Side Driving', ar: 'القيادة بالاتجاه المعاكس' },
 
   // ---- v1.1.0: Expanded License Program (Feature 6) ----
   'license.tier.beginner': { en: 'Beginner License', ar: 'رخصة مبتدئ' },
   'license.tier.intermediate': { en: 'Intermediate License', ar: 'رخصة متوسطة' },
   'license.tier.advanced': { en: 'Advanced License', ar: 'رخصة متقدمة' },
   'license.tier.professional': { en: 'Professional License', ar: 'رخصة احترافية' },
+  'license.tier.master': { en: 'Master Driver License', ar: 'رخصة سائق محترف' },
   'license.tierLocked': { en: 'Complete the previous tier to unlock', ar: 'أكمل المستوى السابق للفتح' },
   'license.tierEarnedToast': { en: '{0} earned!', ar: 'تم الحصول على {0}!' },
 
@@ -383,9 +408,17 @@ export const STRINGS = {
   'progress.stat.vehiclesOwned': { en: 'Vehicles Owned', ar: 'المركبات المملوكة' },
   'progress.stat.licensesEarned': { en: 'Licenses Earned', ar: 'الرخص المكتسبة' },
   'progress.stat.missionsCompleted': { en: 'Missions Completed', ar: 'المهام المكتملة' },
+  'progress.stat.violations': { en: 'Violations', ar: 'المخالفات' },
+  'progress.stat.achievementsUnlocked': { en: 'Achievements Unlocked', ar: 'الإنجازات المفتوحة' },
+  'progress.leaderboard.title': { en: 'Local Leaderboard', ar: 'لوحة الصدارة المحلية' },
+  'progress.leaderboard.bestAccuracy': { en: 'Best Parking Accuracy', ar: 'أفضل دقة اصطفاف' },
+  'progress.leaderboard.fastestCompletion': { en: 'Fastest Completion Time', ar: 'أسرع وقت إنجاز' },
+  'progress.leaderboard.reputation': { en: 'Highest Reputation', ar: 'أعلى سمعة' },
+  'progress.leaderboard.empty': { en: 'No runs recorded yet', ar: 'لا توجد نتائج بعد' },
 
   // ---- v1.1.0: new vehicles (License tier unlocks) ----
   'vehicle.taxi.name': { en: 'MASAR Taxi', ar: 'تكسي مسار' },
   'vehicle.van.name': { en: 'Delivery Van', ar: 'شاحنة التوصيل' },
   'vehicle.sportscar.name': { en: 'Falcon Sports Car', ar: 'سيارة الصقر الرياضية' },
+  'vehicle.hypercar.name': { en: 'Najm Hypercar', ar: 'نجم الخارقة' },
 };

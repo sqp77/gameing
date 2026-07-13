@@ -22,6 +22,8 @@ const DEFAULT_SETTINGS = {
   assist: true,
   language: 'en',
   eventsEnabled: true,
+  dayNightEnabled: true,
+  weatherEnabled: true,
 };
 const LEVEL_COUNT = 20;
 
@@ -47,6 +49,26 @@ function defaultProgressionState() {
 
 function defaultJobsState() {
   return { activeJob: null, completed: Object.fromEntries(JOB_TYPE_IDS.map((id) => [id, 0])), history: [] };
+}
+
+// v1.2.0 Traffic Police System expansion — mirrors defaultJobsState()'s shape exactly (a
+// per-kind counter map + a capped ring-buffer history), so Profile can list both counts and
+// recent entries the same way jobs/achievements already do.
+const VIOLATION_KINDS = ['speeding', 'collision', 'redLight', 'wrongSide'];
+
+function defaultViolationsState() {
+  return { counts: Object.fromEntries(VIOLATION_KINDS.map((k) => [k, 0])), history: [] };
+}
+
+// v1.2.0 Online Leaderboard-Ready architecture — local-only today (see systems/
+// LeaderboardManager.js), capped top-10 per category, sorted by whichever direction counts as
+// "better" for that category (lower elapsed time wins for fastestCompletion; higher for the rest).
+const LEADERBOARD_CATEGORIES = ['bestAccuracy', 'fastestCompletion', 'reputation'];
+const LEADERBOARD_LOWER_IS_BETTER = { fastestCompletion: true };
+const LEADERBOARD_CAP = 10;
+
+function defaultLeaderboardState() {
+  return Object.fromEntries(LEADERBOARD_CATEGORIES.map((c) => [c, []]));
 }
 
 function defaultLastPlayed() {
@@ -83,6 +105,8 @@ function defaultSave() {
     reputation: defaultReputationState(),
     progression: defaultProgressionState(),
     jobs: defaultJobsState(),
+    violations: defaultViolationsState(),
+    leaderboard: defaultLeaderboardState(),
     lastPlayed: defaultLastPlayed(),
   };
 }
@@ -143,6 +167,12 @@ export class SaveManager {
         ...(parsed.jobs || {}),
         completed: { ...defaultJobsState().completed, ...((parsed.jobs || {}).completed || {}) },
       },
+      violations: {
+        ...defaultViolationsState(),
+        ...(parsed.violations || {}),
+        counts: { ...defaultViolationsState().counts, ...((parsed.violations || {}).counts || {}) },
+      },
+      leaderboard: { ...defaultLeaderboardState(), ...(parsed.leaderboard || {}) },
       lastPlayed: { ...defaultLastPlayed(), ...(parsed.lastPlayed || {}) },
     };
   }
@@ -664,6 +694,39 @@ export class SaveManager {
     const completed = this.data.jobs.completed;
     const total = Object.values(completed).reduce((sum, n) => sum + n, 0);
     return { completed, total, history: this.data.jobs.history };
+  }
+
+  // Traffic Police violation history (v1.2.0) — same capped-ring-buffer shape as
+  // recordJobResult()/getJobStats() above, fed by PoliceManager's 'warning'/'fine' events.
+  recordViolation(kind) {
+    this.data.violations.counts[kind] = (this.data.violations.counts[kind] || 0) + 1;
+    this.data.violations.history.unshift({ kind, at: Date.now() });
+    if (this.data.violations.history.length > 20) this.data.violations.history.length = 20;
+    this._persist();
+  }
+
+  getViolations() {
+    const counts = this.data.violations.counts;
+    const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+    return { counts, total, history: this.data.violations.history };
+  }
+
+  // Local-only leaderboard table (v1.2.0 Online Leaderboard-Ready architecture) — the persistence
+  // half of systems/LeaderboardManager.js. Returns whether `value` landed at rank #1, so callers
+  // can react to a new personal best without a second read.
+  submitLeaderboardScore(category, value, meta = {}) {
+    if (!this.data.leaderboard[category]) this.data.leaderboard[category] = [];
+    const list = this.data.leaderboard[category];
+    list.push({ value, meta, at: Date.now() });
+    const lowerIsBetter = LEADERBOARD_LOWER_IS_BETTER[category];
+    list.sort((a, b) => (lowerIsBetter ? a.value - b.value : b.value - a.value));
+    if (list.length > LEADERBOARD_CAP) list.length = LEADERBOARD_CAP;
+    this._persist();
+    return list[0]?.value === value;
+  }
+
+  getLeaderboardTop(category) {
+    return this.data.leaderboard[category] || [];
   }
 
   getVehicleCount() {

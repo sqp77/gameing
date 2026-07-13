@@ -34,6 +34,8 @@ import { HubBuilder } from '../world/HubBuilder.js';
 import { HubTriggerManager } from '../systems/HubTriggerManager.js';
 import { HubTrafficManager } from '../systems/HubTrafficManager.js';
 import { PoliceManager } from '../systems/PoliceManager.js';
+import { WeatherManager } from '../systems/WeatherManager.js';
+import { LeaderboardManager } from '../systems/LeaderboardManager.js';
 import { JobManager } from '../systems/JobManager.js';
 import { JOB_TYPES } from '../data/jobs.js';
 import { HUB_CAR_START, HUB_THEME_ID } from '../data/hubMap.js';
@@ -81,7 +83,7 @@ export class GameManager {
     this.score = new ScoreManager();
     this.achievements = new AchievementManager(this.save);
     this.replayRecorder = new ReplayRecorder();
-    this.cameraController = new CameraController(this.camera);
+    this.cameraController = new CameraController(this.camera, this.canvas);
     this.ui = new UIManager(this.save, this.auth, this.i18n);
 
     // ---- v1.1.0 Open World Hub (Feature 1) + Jobs/Traffic/Police (Features 2/3/5) ----
@@ -89,7 +91,9 @@ export class GameManager {
     this.hubTriggers = new HubTriggerManager();
     this.hubTraffic = new HubTrafficManager(this.scene, this.physics);
     this.police = new PoliceManager(this.scene, this.physics);
+    this.weather = new WeatherManager(this.scene);
     this.jobs = new JobManager(this.save, this.parking, this.hub.group);
+    this.leaderboard = new LeaderboardManager(this.save);
     this._hubOrigin = false; // true when the current Academy/License/Shop screen (or the
     // gameplay attempt started from it) was reached by driving to its hub landmark, so
     // quitting/backing-out returns to the hub instead of the main menu.
@@ -119,6 +123,8 @@ export class GameManager {
     this.renderer.shadowMap.enabled = this.save.getSettings().shadows;
     this.audio.setVolume(this.save.getSettings().volume);
     this.cameraController.setMode(this.save.getSettings().camera);
+    this.hub.setDayNightEnabled(this.save.getSettings().dayNightEnabled);
+    this.weather.setEnabled(this.save.getSettings().weatherEnabled);
 
     this._wireUIEvents();
     this._wireParkingEvents();
@@ -146,6 +152,9 @@ export class GameManager {
     this.ui.on('selectLevel', (id) => this.startLevel(id));
     this.ui.on('pause', () => this.pauseGame());
     this.ui.on('resume', () => this.resumeGame());
+    this.ui.on('enterPhotoMode', () => this.enterPhotoMode());
+    this.ui.on('photoExit', () => this.exitPhotoMode());
+    this.ui.on('photoScreenshot', () => this.capturePhotoScreenshot());
     this.ui.on('restart', () => this.restartLevel());
     this.ui.on('restartRequest', () => this.requestRestart());
     this.ui.on('restartConfirmed', () => this.confirmRestart());
@@ -214,11 +223,13 @@ export class GameManager {
       this._announceRankChange(reputation);
     });
 
-    this.police.on('warning', () => {
+    this.police.on('warning', ({ kind }) => {
+      this.save.recordViolation(kind);
       this._announceRankChange(this.save.addReputation(REPUTATION_DELTA.reckless));
       this.ui.showToast(this.i18n.t('police.warningToast'), 'warn');
     });
-    this.police.on('fine', ({ amount }) => {
+    this.police.on('fine', ({ kind, amount }) => {
+      this.save.recordViolation(kind);
       const deduct = Math.min(this.save.getCoins(), amount);
       if (deduct > 0) this.save.spendCoins(deduct);
       this._announceRankChange(this.save.addReputation(REPUTATION_DELTA.policeFine));
@@ -227,6 +238,7 @@ export class GameManager {
   }
 
   _announceRankChange(reputation) {
+    this.leaderboard.submitScore('reputation', reputation.score);
     if (reputation?.rankChanged) {
       this.ui.showToast(this.i18n.t('reputation.rankUpToast', this.i18n.t(reputation.rank.label)), 'success');
     }
@@ -287,6 +299,8 @@ export class GameManager {
       if (!patch.assist) this.ui.updateProximity(null);
     }
     if ('language' in patch) this.i18n.setLanguage(patch.language);
+    if ('dayNightEnabled' in patch) this.hub.setDayNightEnabled(patch.dayNightEnabled);
+    if ('weatherEnabled' in patch) this.weather.setEnabled(patch.weatherEnabled);
   }
 
   // Optional national-event lookup (Saudi National Day / Founding Day / Riyadh Season — see
@@ -422,7 +436,8 @@ export class GameManager {
     this.mode = 'hub';
     this._hubOrigin = false;
 
-    this.hub.build();
+    const { theme } = this.hub.build();
+    this.weather.rollForSession(theme);
     this.hubTraffic.build();
     this.police.build();
     this.jobs.reset();
@@ -540,6 +555,47 @@ export class GameManager {
     this.ui.showScreen('hud');
   }
 
+  // Photo Mode (v1.2.0) — an optional, off-by-default overlay reached only from the Pause
+  // menu. Freezes gameplay (see the `_loop()` 'photo' branch) and hands the camera to a
+  // free-orbit controller centered on the car's position at the moment of entry.
+  enterPhotoMode() {
+    if (this.state !== 'paused') return;
+    this.cameraController.enterFreeCam(this.carController);
+    this.state = 'photo';
+    this.ui.showScreen('photo');
+  }
+
+  exitPhotoMode() {
+    if (this.state !== 'photo') return;
+    this.cameraController.exitFreeCam();
+    this.state = this._preHubPauseState;
+    this.ui.showScreen('hud');
+  }
+
+  // Screenshot Mode: renders one more frame, then draws the canvas plus a small MASAR watermark
+  // onto an offscreen 2D canvas and triggers a PNG download — no dependency, native Canvas API.
+  capturePhotoScreenshot() {
+    this.renderer.render(this.scene, this.camera);
+    const src = this.renderer.domElement;
+    const out = document.createElement('canvas');
+    out.width = src.width;
+    out.height = src.height;
+    const ctx = out.getContext('2d');
+    ctx.drawImage(src, 0, 0);
+    ctx.textAlign = 'right';
+    ctx.font = `700 ${Math.round(out.height * 0.024)}px Orbitron, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillText('MASAR', out.width - 24, out.height - 46);
+    ctx.font = `${Math.round(out.height * 0.015)}px Rajdhani, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.fillText('Created by Saud Alqhtani', out.width - 24, out.height - 22);
+
+    const link = document.createElement('a');
+    link.href = out.toDataURL('image/png');
+    link.download = `masar-photo-${Date.now()}.png`;
+    link.click();
+  }
+
   restartLevel() {
     if (this.mode === 'hub') return; // no level to restart while free-roaming the hub
     this.save.addRestart();
@@ -572,6 +628,7 @@ export class GameManager {
       this.enterHub();
       return;
     }
+    if (this.carController) this.audio.playEngineStop();
     this._flushSessionStats();
     this._disposeGhost();
     this.assist.setEnabled(false);
@@ -592,6 +649,7 @@ export class GameManager {
       this.enterHub();
       return;
     }
+    if (this.carController) this.audio.playEngineStop();
     this._flushSessionStats();
     this._disposeGhost();
     this.assist.setEnabled(false);
@@ -621,6 +679,8 @@ export class GameManager {
   }
 
   _handleParkingSuccess(accuracy) {
+    this.leaderboard.submitScore('bestAccuracy', accuracy);
+    this.leaderboard.submitScore('fastestCompletion', this.score.elapsed);
     if (this.mode === 'license') {
       this._handleLicenseLegSuccess(accuracy);
       return;
@@ -630,7 +690,12 @@ export class GameManager {
     this.state = 'victory';
     const breakdown = this.score.computeFinalScore(accuracy);
     this._applyEventCoinBonus(breakdown);
-    this.achievements.evaluateRun({ collisions: this.score.collisions, elapsed: this.score.elapsed, accuracy });
+    this.achievements.evaluateRun({
+      collisions: this.score.collisions,
+      elapsed: this.score.elapsed,
+      accuracy,
+      eventId: this._getActiveEventIfEnabled()?.id,
+    });
 
     if (this.mode === 'academy') {
       const moduleDef = ACADEMY_MODULES.find((m) => m.id === this.currentAcademyModuleId);
@@ -877,9 +942,14 @@ export class GameManager {
       this._updateReplayPlayback(dt);
     } else if (this.state === 'hub' || this.state === 'hub-menu') {
       this._updateHub(dt, this.state === 'hub-menu');
+    } else if (this.state === 'photo') {
+      // Photo Mode (v1.2.0): "Pause Time" — car physics/traffic/score never see `dt` here, only
+      // the free camera and the ambient world/effects loops below keep animating.
+      if (this.input.state.pauseToggle) this.exitPhotoMode();
+      else this.cameraController.updateFreeCam();
     }
 
-    if (this.state !== 'replay' && this.carController) {
+    if (this.state !== 'replay' && this.state !== 'photo' && this.carController) {
       this.cameraController.update(dt, this.carController);
     }
     this.effects.update(dt);
@@ -902,8 +972,13 @@ export class GameManager {
     this._sessionPlayTime += dt;
     if (this.input.state.cameraToggle) this.cameraController.cycle();
 
-    const result = this.carController.update(dt, this.input.state, { steerSensitivity: this.save.getSettings().sensitivity });
+    const result = this.carController.update(dt, this.input.state, {
+      steerSensitivity: this.save.getSettings().sensitivity,
+      gripMultiplier: this.weather.getGripMultiplier(),
+    });
     this._sessionDistance += Math.abs(this.carController.state.speed) * dt;
+    this.carController.setHeadlights(this.hub.getHeadlightFactor());
+    this.weather.update(dt, this.carController.state.x, this.carController.state.z);
 
     this._collisionCooldown = Math.max(0, this._collisionCooldown - dt);
     if (result.collided && result.impact > COLLISION_IMPACT_THRESHOLD && this._collisionCooldown <= 0) {
@@ -924,7 +999,7 @@ export class GameManager {
     this.police.update(dt, this.carController.state);
     this.jobs.update(dt);
 
-    const parkResult = this.parking.update(dt, this.carController.state);
+    const parkResult = this.parking.update(dt, this.carController.state, this.weather.getParkingToleranceMultiplier());
     this.ui.showParkingProgress(parkResult.progress);
 
     const activeJob = this.jobs.activeJob;

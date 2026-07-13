@@ -70,13 +70,20 @@ export class PhysicsManager {
     const reverseMaxSpeed = maxSpeed * 0.45;
     const speedRatio = clamp(Math.abs(state.speed) / maxSpeed, 0, 1);
 
+    // Weather grip multiplier (v1.2.0 Dynamic Weather, Hub-only) — 1 in clear/cloudy conditions
+    // (byte-for-byte the pre-v1.2.0 formulas below), lower in rain/sandstorm. Reduces steering
+    // authority and acceleration/braking power, and amplifies handbrake slide distance — the
+    // same `options` channel already carrying `steerSensitivity` from GameManager, so no new
+    // call-path plumbing was needed.
+    const gripMultiplier = options.gripMultiplier ?? 1;
+
     const steerSens = options.steerSensitivity ?? 1;
-    const maxSteer = degToRad(MAX_STEER_DEG) * preset.handling * steerSens * (1 - speedRatio * 0.45);
+    const maxSteer = degToRad(MAX_STEER_DEG) * preset.handling * steerSens * gripMultiplier * (1 - speedRatio * 0.45);
     const targetSteer = clamp(input.steer, -1, 1) * maxSteer;
     const steerRate = degToRad(STEER_RATE_DEG) * preset.handling;
     state.steerAngle = moveTowards(state.steerAngle, targetSteer, steerRate * dt);
 
-    const accel = preset.accel;
+    const accel = preset.accel * gripMultiplier;
     let targetAccel = 0;
     if (input.handbrake) {
       targetAccel = state.speed > 0.05 ? -accel * 3.0 : state.speed < -0.05 ? accel * 3.0 : 0;
@@ -106,7 +113,7 @@ export class PhysicsManager {
 
     const forward = { x: Math.cos(state.yaw), z: Math.sin(state.yaw) };
     const lateral = { x: -Math.sin(state.yaw), z: Math.cos(state.yaw) };
-    const slipAmount = state.handbrakeSlip * 2.4 * Math.sign(state.steerAngle || 0.0001);
+    const slipAmount = state.handbrakeSlip * 2.4 * (2 - gripMultiplier) * Math.sign(state.steerAngle || 0.0001);
     state.x += forward.x * state.speed * dt + lateral.x * slipAmount * dt;
     state.z += forward.z * state.speed * dt + lateral.z * slipAmount * dt;
 

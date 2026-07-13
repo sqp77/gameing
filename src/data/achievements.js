@@ -18,6 +18,12 @@ export const ACHIEVEMENTS = [
   { id: 'night_driver', name: 'achievement.night_driver.name', description: 'achievement.night_driver.desc', icon: '☾' },
   { id: 'vehicle_collector', name: 'achievement.vehicle_collector.name', description: 'achievement.vehicle_collector.desc', icon: '▣' },
   { id: 'combo_master', name: 'achievement.combo_master.name', description: 'achievement.combo_master.desc', icon: '✴' },
+  // v1.2.0 Seasonal Events enrichment — one exclusive achievement per NATIONAL_EVENTS entry
+  // (data/events.js), unlocked by completing any level while that event is active. Reuses the
+  // existing achievement popup/unlock pattern rather than a separate "reward" subsystem.
+  { id: 'event_nationalDay', name: 'achievement.event_nationalDay.name', description: 'achievement.event_nationalDay.desc', icon: '🇸🇦' },
+  { id: 'event_foundingDay', name: 'achievement.event_foundingDay.name', description: 'achievement.event_foundingDay.desc', icon: '🏛' },
+  { id: 'event_riyadhSeason', name: 'achievement.event_riyadhSeason.name', description: 'achievement.event_riyadhSeason.desc', icon: '🎡' },
 ];
 
 export const ACHIEVEMENT_COUNT = ACHIEVEMENTS.length;

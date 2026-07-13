@@ -25,7 +25,7 @@ export class AchievementManager extends EventEmitter {
     this.save = saveManager;
   }
 
-  evaluateRun({ collisions, elapsed, accuracy }) {
+  evaluateRun({ collisions, elapsed, accuracy, eventId }) {
     const newlyUnlocked = [];
     const tryUnlock = (id) => {
       if (this.save.unlockAchievement(id)) newlyUnlocked.push(ACHIEVEMENTS.find((a) => a.id === id));
@@ -42,6 +42,11 @@ export class AchievementManager extends EventEmitter {
     if (this._allLevelsAtThreeStars()) tryUnlock('parking_expert');
     if (this._allNightLevelsCleared()) tryUnlock('night_driver');
     if (VEHICLE_PRESETS.every((p) => this.save.isVehicleUnlocked(p.id))) tryUnlock('vehicle_collector');
+
+    // Seasonal Events (v1.2.0): completing any level while a national event is active unlocks
+    // that event's exclusive achievement — `eventId` is only passed when GameManager's own
+    // eventsEnabled-gated lookup found one active, so this is a complete no-op otherwise.
+    if (eventId && ACHIEVEMENTS.some((a) => a.id === `event_${eventId}`)) tryUnlock(`event_${eventId}`);
 
     if (newlyUnlocked.length >= 2) tryUnlock('combo_master');
 

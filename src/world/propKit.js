@@ -48,6 +48,9 @@ export function setupSkyAndLights(group, scene, theme) {
   sun.shadow.camera.far = 180;
   sun.shadow.bias = -0.0015;
   group.add(sun, sun.target);
+  // v1.2.0 Day/Night Cycle (Hub only) reads these back to fade intensity continuously —
+  // additive return value, existing callers that don't destructure it are unaffected.
+  return { hemi, sun };
 }
 
 export function buildGround(group, theme, halfX, halfZ) {
@@ -84,6 +87,7 @@ export function buildBuildingCluster(group, theme, halfX, halfZ, rng, { flagEnab
   const spacing = 10;
   const depthOffset = 8;
   const parapetMat = new THREE.MeshStandardMaterial({ color: theme.curb, roughness: 0.75 });
+  const buildingMaterials = [];
   const place = (x, z) => {
     const h = theme.buildingHeights[0] + rng() * (theme.buildingHeights[1] - theme.buildingHeights[0]);
     const w = 6 + rng() * 5;
@@ -96,6 +100,7 @@ export function buildBuildingCluster(group, theme, halfX, halfZ, rng, { flagEnab
       emissive: theme.night ? 0xffdf91 : 0x000000,
       emissiveIntensity: theme.night ? 0.12 : 0,
     });
+    buildingMaterials.push(mat);
     mkBox(group, null, w, h, d, x, h / 2, z, mat);
     mkBox(group, null, w * 0.92, 0.35, d * 0.92, x, h + 0.17, z, parapetMat);
   };
@@ -119,7 +124,10 @@ export function buildBuildingCluster(group, theme, halfX, halfZ, rng, { flagEnab
       flags.push(buildFlag(group, halfX * (0.35 + i * 0.25), (halfZ + depthOffset) * (rng() < 0.5 ? 1 : -1)));
     }
   }
-  return { flags };
+  // `buildingMaterials` (v1.2.0 Day/Night Cycle) lets HubBuilder fade the night emissive-glow
+  // continuously instead of the fixed on/off `theme.night` this file already baked in above —
+  // additive return field, WorldBuilder's existing `{ flags }` destructure ignores it.
+  return { flags, buildingMaterials };
 }
 
 export function buildTrees(group, theme, halfX, halfZ, rng) {

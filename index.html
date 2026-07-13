@@ -111,7 +111,7 @@
               <span class="title-ar">مسار</span><span class="title-sep">|</span
               ><span class="title-en">MASAR</span>
             </h1>
-            <span class="menu-version-chip" data-i18n="common.version">v1.1.0</span>
+            <span class="menu-version-chip" data-i18n="common.version">v1.2.0</span>
           </div>
           <p class="game-subtitle">
             <span class="subtitle-ar">محاكي القيادة والاصطفاف الذكي</span>
@@ -345,6 +345,8 @@
             id="progress-achievements"
             class="achievements-grid progress-achievements"
           ></div>
+          <h3 class="progress-subhead" data-i18n="progress.leaderboard.title">Local Leaderboard</h3>
+          <div id="progress-leaderboard-list" class="progress-level-list"></div>
           <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
           <div class="ownership-footer" data-i18n="common.ownershipFooter">
             Created by Saud Alqhtani | GitHub: sqp77
@@ -358,6 +360,15 @@
           <h2 data-i18n="shop.title">Vehicle Shop</h2>
           <div class="achievements-summary">
             <span data-i18n="shop.coinsPrefix">Coins: </span><span id="shop-coins">0</span>
+          </div>
+          <div class="showroom-preview">
+            <canvas id="shop-preview-canvas"></canvas>
+            <div class="showroom-specs">
+              <div class="showroom-spec-name" id="showroom-spec-name">—</div>
+              <div class="showroom-spec-row"><label data-i18n="shop.spec.topSpeed">Top Speed</label><span id="showroom-spec-speed">—</span></div>
+              <div class="showroom-spec-row"><label data-i18n="shop.spec.acceleration">Acceleration</label><span id="showroom-spec-accel">—</span></div>
+              <div class="showroom-spec-row"><label data-i18n="shop.spec.handling">Handling</label><span id="showroom-spec-handling">—</span></div>
+            </div>
           </div>
           <div id="shop-grid" class="achievements-grid"></div>
           <button class="btn btn-back" data-back="main-menu" data-i18n="common.back">Back</button>
@@ -429,7 +440,16 @@
                 <option value="first" data-i18n="settings.cameraFirst">First Person</option>
                 <option value="top" data-i18n="settings.cameraTop">Top Down</option>
                 <option value="reverse" data-i18n="settings.cameraReverse">Reverse Camera</option>
+                <option value="cinematic" data-i18n="settings.cameraCinematic">Cinematic</option>
               </select>
+            </div>
+            <div class="settings-row" data-label="settings.dayNight">
+              <label data-i18n="settings.dayNight">Day/Night Cycle</label>
+              <input type="checkbox" id="setting-day-night" checked />
+            </div>
+            <div class="settings-row" data-label="settings.weather">
+              <label data-i18n="settings.weather">Dynamic Weather</label>
+              <input type="checkbox" id="setting-weather" checked />
             </div>
           </div>
 
@@ -493,6 +513,13 @@
               <label data-i18n="profile.memberSince">Member Since</label><span id="profile-created">—</span>
             </div>
           </div>
+          <div class="profile-violations">
+            <div class="progress-subhead" data-i18n="profile.violationHistory.title">Violation History</div>
+            <div id="profile-violations-summary" class="achievements-summary">
+              <span data-i18n="profile.violationHistory.totalPrefix">Total violations: </span><span id="profile-violations-total">0</span>
+            </div>
+            <div id="profile-violations-list" class="progress-level-list"></div>
+          </div>
           <div class="menu-buttons">
             <button id="btn-switch-account" class="btn" data-i18n="profile.switchAccount">Switch Account</button>
             <button id="btn-logout" class="btn btn-back" data-i18n="profile.logout">Logout</button>
@@ -517,7 +544,7 @@
               Smart Driving &amp; Parking Simulator — محاكي القيادة والاصطفاف
               الذكي
             </p>
-            <div class="credits-version-chip" data-i18n="common.version">v1.1.0</div>
+            <div class="credits-version-chip" data-i18n="common.version">v1.2.0</div>
             <p class="credits-line credits-created-by" data-i18n="common.createdByLabel">Created by</p>
             <p class="credits-line credits-creator-name"><strong>Saud Alqhtani</strong></p>
             <p class="credits-line credits-github-label" data-i18n="common.githubLabel" dir="ltr">GitHub:</p>
@@ -636,6 +663,7 @@
           <div class="menu-buttons">
             <button id="btn-resume" class="btn btn-primary" data-i18n="pause.resume">Resume</button>
             <button id="btn-restart" class="btn" data-i18n="pause.restart">Restart Level</button>
+            <button id="btn-photo-mode" class="btn" data-i18n="pause.photoMode">Photo Mode</button>
             <button id="btn-pause-settings" class="btn" data-i18n="menu.settings">Settings</button>
             <button id="btn-quit" class="btn btn-back" data-i18n="pause.quit">Quit to Menu</button>
           </div>
@@ -670,6 +698,18 @@
         <div class="replay-bar">
           <span id="replay-label" data-i18n="replay.watchingBestRun">Watching Best Run</span>
           <button id="btn-stop-replay" class="btn btn-icon" data-i18n="replay.stop">Stop</button>
+        </div>
+      </section>
+
+      <!-- ===================== PHOTO MODE ===================== -->
+      <!-- Time is frozen (see GameManager's 'photo' loop branch); drag to orbit, wheel/pinch to
+           zoom (CameraController.enterFreeCam). Only the toolbar buttons capture pointer input —
+           the rest of this bar is pass-through so dragging over it still orbits the camera. -->
+      <section id="screen-photo" class="screen hidden hud">
+        <div class="replay-bar">
+          <span id="photo-hint" data-i18n="photoMode.hint">Drag to orbit &middot; Scroll to zoom</span>
+          <button id="btn-photo-screenshot" class="btn" data-i18n="photoMode.screenshot">Screenshot</button>
+          <button id="btn-photo-exit" class="btn btn-back" data-i18n="photoMode.exit">Exit</button>
         </div>
       </section>
 

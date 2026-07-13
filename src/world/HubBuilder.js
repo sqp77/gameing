@@ -12,9 +12,12 @@ import { createCarModel } from '../entities/Car.js';
 import * as propKit from './propKit.js';
 import { HUB_BOUNDS, HUB_LANDMARKS, HUB_JOB_MARKERS, HUB_DEALERSHIP_LOT, HUB_THEME_ID } from '../data/hubMap.js';
 import { STRINGS } from '../data/strings.js';
+import { computeDayNightState } from './dayNightCycle.js';
 
 const HUB_SEED = 90001;
 const LANDMARK_ACCENTS = { academy: '#1a6fd4', licenseCenter: '#0d6b3a', dealership: '#b8862e' };
+const DAY_NIGHT_CYCLE_SEC = 480; // 8 minutes per full sunrise->day->sunset->night loop
+const BUILDING_EMISSIVE_NIGHT = 0.12; // matches propKit.buildBuildingCluster's fixed night value
 
 // Builds the persistent Open World Hub (Feature 1): a compact drivable city area sharing
 // every visual primitive with the per-level WorldBuilder (both built on propKit.js) but,
@@ -33,7 +36,17 @@ export class HubBuilder {
     this.scene.add(this.group);
     this._lampLights = [];
     this._flags = [];
-    this._elapsed = 0;
+    // Starts mid-"day" phase (not 0, which lands at sunrise-begin/near-night values) so a
+    // freshly-entered hub matches its pre-v1.2.0 always-daytime look, then cycles naturally
+    // from there the longer the player stays.
+    this._elapsed = DAY_NIGHT_CYCLE_SEC * 0.3;
+    this._sunLight = null;
+    this._hemiLight = null;
+    this._buildingMaterials = [];
+    this._baseSunIntensity = 1;
+    this._baseAmbientIntensity = 1;
+    this._dayNightEnabled = true;
+    this._dayNightState = computeDayNightState(this._elapsed, DAY_NIGHT_CYCLE_SEC);
   }
 
   clear() {
@@ -52,19 +65,52 @@ export class HubBuilder {
     }
     this._lampLights = [];
     this._flags = [];
-    this._elapsed = 0;
+    this._elapsed = DAY_NIGHT_CYCLE_SEC * 0.3;
+    this._sunLight = null;
+    this._hemiLight = null;
+    this._buildingMaterials = [];
+    this._dayNightState = computeDayNightState(this._elapsed, DAY_NIGHT_CYCLE_SEC);
     this.physics.reset();
+  }
+
+  // Toggling mid-session (Settings) takes effect immediately: turning it off snaps lighting
+  // back to the theme's own static day/night baseline (byte-for-byte the pre-v1.2.0 look —
+  // HUB_THEME_ID is the daytime 'riyadh' theme) instead of freezing wherever the cycle was.
+  setDayNightEnabled(enabled) {
+    this._dayNightEnabled = enabled;
+    if (!enabled) {
+      this._dayNightState = { phase: 'day', sunFactor: 1, ambientFactor: 1, lampOn: 0, headlightsOn: 0 };
+      this._applyDayNightState(this._dayNightState);
+    }
+  }
+
+  // Cached each update() so GameManager can read the current headlight factor without
+  // recomputing the cycle — only consumed for the Hub's player car, never campaign/Academy/
+  // License (those keep their existing always-on headlight intensity untouched).
+  getHeadlightFactor() {
+    return this._dayNightState.headlightsOn;
   }
 
   update(dt) {
     this._elapsed += dt;
+    if (this._dayNightEnabled) {
+      this._dayNightState = computeDayNightState(this._elapsed, DAY_NIGHT_CYCLE_SEC);
+      this._applyDayNightState(this._dayNightState);
+    }
     for (let i = 0; i < this._lampLights.length; i++) {
       const { light, base } = this._lampLights[i];
-      light.intensity = base + Math.sin(this._elapsed * 1.5 + i) * base * 0.18;
+      const dnBase = base * this._dayNightState.lampOn;
+      light.intensity = dnBase + Math.sin(this._elapsed * 1.5 + i) * dnBase * 0.18;
     }
     for (let i = 0; i < this._flags.length; i++) {
       this._flags[i].rotation.y = Math.sin(this._elapsed * 2 + i) * 0.15;
     }
+  }
+
+  _applyDayNightState({ sunFactor, ambientFactor, lampOn }) {
+    if (this._sunLight) this._sunLight.intensity = this._baseSunIntensity * sunFactor;
+    if (this._hemiLight) this._hemiLight.intensity = this._baseAmbientIntensity * ambientFactor;
+    for (const mat of this._buildingMaterials) mat.emissiveIntensity = BUILDING_EMISSIVE_NIGHT * lampOn;
   }
 
   build() {
@@ -77,7 +123,11 @@ export class HubBuilder {
     const rng = makeSeededRandom(HUB_SEED);
     const { halfX, halfZ } = HUB_BOUNDS;
 
-    propKit.setupSkyAndLights(this.group, this.scene, theme);
+    const { hemi, sun } = propKit.setupSkyAndLights(this.group, this.scene, theme);
+    this._hemiLight = hemi;
+    this._sunLight = sun;
+    this._baseSunIntensity = theme.sunIntensity;
+    this._baseAmbientIntensity = theme.ambientIntensity;
     propKit.buildGround(this.group, theme, halfX, halfZ);
     propKit.buildPerimeter(this.group, this.physics, theme, halfX, halfZ);
     // The background skyline is purely decorative and, at hub scale, is by far the largest
@@ -85,7 +135,8 @@ export class HubBuilder {
     // than changing propKit's shared builder, so the campaign's WorldBuilder keeps its
     // existing shadow look untouched.
     const beforeSkyline = this.group.children.length;
-    const { flags } = propKit.buildBuildingCluster(this.group, theme, halfX, halfZ, rng, { flagEnabled: true, flagCount: 2 });
+    const { flags, buildingMaterials } = propKit.buildBuildingCluster(this.group, theme, halfX, halfZ, rng, { flagEnabled: true, flagCount: 2 });
+    this._buildingMaterials = buildingMaterials;
     for (let i = beforeSkyline; i < this.group.children.length; i++) {
       this.group.children[i].traverse?.((node) => {
         if (node.isMesh) node.castShadow = false;
