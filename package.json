@@ -1,18 +1,34 @@
 {
-  "name": "masar",
-  "version": "1.2.0",
-  "private": true,
-  "type": "module",
-  "author": "Saud Alqhtani (GitHub: sqp77)",
+  "name": "tahaddi-al-tadweer",
+  "version": "1.0.0",
+  "description": "تحدي التدوير السعودي - لعبة تعليمية ثلاثية الأبعاد لإعادة التدوير",
+  "main": "index.html",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^8.1.1"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sfgco/gameing-2.git"
   },
+  "keywords": [
+    "game",
+    "threejs",
+    "recycling",
+    "education"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/sfgco/gameing-2/issues"
+  },
+  "homepage": "https://github.com/sfgco/gameing-2#readme",
   "dependencies": {
-    "three": "^0.185.1"
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }
