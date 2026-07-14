@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // A literal 3D finish-line arch, dressed with the brand mark, that the truck
-// crosses as the 60-second run winds down.
+// crosses as the 60-second run winds down.u7
 
 export class FinishBanner {
   constructor(scene, roadHalfWidth, logoTexture) {
